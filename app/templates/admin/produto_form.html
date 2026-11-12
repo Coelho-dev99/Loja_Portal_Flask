@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }} · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<h1>{{ titulo }}</h1>
+
+<form method="post" class="form">
+  <label>Nome
+    <input type="text" name="nome" maxlength="120" required value="{{ produto.nome or '' }}">
+  </label>
+
+  <label>Descrição
+    <textarea name="descricao" rows="4">{{ produto.descricao or '' }}</textarea>
+  </label>
+
+  <label>Preço (R$)
+    <input type="text" name="preco" inputmode="decimal" required
+           value="{{ '' if produto.preco is none else produto.preco }}">
+  </label>
+
+  <label>Quantidade em estoque
+    <input type="number" name="estoque" min="0" required
+           value="{{ 0 if produto.estoque is none or produto.estoque is undefined else produto.estoque }}">
+  </label>
+
+  <label>Link da foto (opcional)
+    <input type="url" name="foto_url" maxlength="255" value="{{ produto.foto_url or '' }}">
+  </label>
+
+  <div class="linha">
+    <button type="submit">Salvar</button>
+    <a href="{{ url_for('admin.produtos') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,10 @@
+# Ambiente virtual
+venv/
+
+# Segredos
+.env
+.env.example
+
+# Python
+__pycache__/
+*.pyc

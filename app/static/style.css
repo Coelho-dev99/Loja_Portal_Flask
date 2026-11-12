@@ -1,0 +1,83 @@
+:root {
+  --fundo: #faf7f2;
+  --texto: #2b2b2b;
+  --destaque: #8a5a44;
+  --borda: #e2d9cc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+a { color: var(--destaque); }
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.8rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--borda);
+}
+.topo nav { flex: 1; }
+.topo form { margin: 0; }
+
+.conteudo { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem; }
+
+.linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.botao, button {
+  background: var(--destaque);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+button.link {
+  background: none;
+  color: var(--destaque);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.form { display: grid; gap: 1rem; max-width: 480px; }
+.form label { display: grid; gap: 0.3rem; font-weight: 600; }
+input, textarea {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+}
+
+.tabela { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borda); }
+tr.inativo td { opacity: 0.55; }
+.acoes { display: flex; gap: 1rem; align-items: center; }
+.acoes form { margin: 0; }
+
+.tag {
+  background: #f3d9d0;
+  color: #8a2f1a;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.aviso { padding: 0.6rem 0.8rem; border-radius: 6px; }
+.aviso.ok { background: #e3f1e3; }
+.aviso.erro { background: #f8e0e0; }

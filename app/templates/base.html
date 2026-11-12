@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Portal La.B{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  {% if session.get('admin') %}
+  <header class="topo">
+    <strong>Portal La.B · Painel</strong>
+    <nav>
+      <a href="{{ url_for('admin.produtos') }}">Produtos</a>
+    </nav>
+    <form method="post" action="{{ url_for('admin.logout') }}">
+      <button type="submit" class="link">Sair</button>
+    </form>
+  </header>
+  {% endif %}
+
+  <main class="conteudo">
+    {% with mensagens = get_flashed_messages(with_categories=true) %}
+      {% for categoria, texto in mensagens %}
+        <p class="aviso {{ categoria }}">{{ texto }}</p>
+      {% endfor %}
+    {% endwith %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+</body>
+</html>
