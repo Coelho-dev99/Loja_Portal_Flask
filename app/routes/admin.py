@@ -215,3 +215,48 @@ def produto_alternar(produto_id):
         )
     db.commit()
     return redirect(url_for("admin.produtos"))
+
+
+# ---------------------------------------------------------------
+# Tipos de peca personalizada (tapete, quadro, moldura...)
+# ---------------------------------------------------------------
+@bp.route("/tipos", methods=["GET", "POST"])
+@login_required
+def tipos():
+    db = get_db()
+
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+
+        if not nome:
+            flash("Informe o nome do tipo.", "erro")
+        elif len(nome) > 60:
+            flash("O nome do tipo pode ter no máximo 60 caracteres.", "erro")
+        else:
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM tipos_personalizado WHERE lower(nome) = lower(%s)",
+                    (nome,),
+                )
+                if cur.fetchone():
+                    flash("Esse tipo já existe.", "erro")
+                else:
+                    cur.execute(
+                        "INSERT INTO tipos_personalizado (nome) VALUES (%s)", (nome,)
+                    )
+                    db.commit()
+                    flash("Tipo cadastrado.", "ok")
+        return redirect(url_for("admin.tipos"))
+
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.id, t.nome, COUNT(i.id) AS usos
+            FROM tipos_personalizado t
+            LEFT JOIN itens_pedido i ON i.tipo_personalizado_id = t.id
+            GROUP BY t.id
+            ORDER BY t.nome
+            """
+        )
+        lista = cur.fetchall()
+    return render_template("admin/tipos.html", tipos=lista)

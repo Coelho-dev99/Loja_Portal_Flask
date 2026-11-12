@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Pedidos · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<div class="linha">
+  <h1>Pedidos</h1>
+  <a class="botao" href="{{ url_for('admin_pedidos.novo') }}">+ Novo pedido</a>
+</div>
+
+{% if pedidos %}
+<div class="tabela">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Cliente</th>
+        <th>Itens</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Criado em</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in pedidos %}
+      <tr class="{{ 'inativo' if p.status == 'cancelado' else '' }}">
+        <td>{{ p.id }}</td>
+        <td>{{ p.cliente or p.observacoes or '—' }}</td>
+        <td>{{ p.qtd_itens }}</td>
+        <td>R$ {{ p.total|brl }}</td>
+        <td><span class="status {{ p.status }}">{{ p.status|rotulo_status }}</span></td>
+        <td>{{ p.criado_em|data_br }}</td>
+        <td><a href="{{ url_for('admin_pedidos.detalhe', pedido_id=p.id) }}">Abrir</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>Nenhum pedido ainda. Quando combinar uma venda no Instagram, clique em <strong>Novo pedido</strong>.</p>
+{% endif %}
+{% endblock %}

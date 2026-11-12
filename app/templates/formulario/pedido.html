@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block titulo %}Seu pedido · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<h1>Seu pedido</h1>
+
+<div class="tabela">
+  <table>
+    <thead><tr><th>Item</th><th>Qtd</th><th>Valor</th></tr></thead>
+    <tbody>
+    {% for i in itens %}
+      <tr>
+        <td>{% if i.tipo == 'pronta_entrega' %}{{ i.produto_nome }}{% else %}{{ i.tipo_nome }}: {{ i.descricao }}{% endif %}</td>
+        <td>{{ i.quantidade }}</td>
+        <td>R$ {{ (i.quantidade * i.valor_unitario)|brl }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="2">Total</td><td>R$ {{ total|brl }}</td></tr></tfoot>
+  </table>
+</div>
+
+<h2>Seus dados para a entrega</h2>
+
+{% for erro in erros %}
+<p class="aviso erro">{{ erro }}</p>
+{% endfor %}
+
+<form method="post" class="form">
+  <label>Nome completo
+    <input type="text" name="nome" maxlength="120" required autocomplete="name" value="{{ valores.get('nome', '') }}">
+  </label>
+  <label>Telefone / WhatsApp (com DDD)
+    <input type="tel" name="telefone" required autocomplete="tel" placeholder="(61) 91234-5678" value="{{ valores.get('telefone', '') }}">
+  </label>
+  <label>@ do Instagram (opcional)
+    <input type="text" name="instagram" maxlength="31" value="{{ valores.get('instagram', '') }}">
+  </label>
+  <label>CPF (opcional)
+    <input type="text" name="cpf" inputmode="numeric" maxlength="14" value="{{ valores.get('cpf', '') }}">
+  </label>
+
+  <label>CEP
+    <input type="text" id="cep" name="cep" inputmode="numeric" maxlength="9" required autocomplete="postal-code" value="{{ valores.get('cep', '') }}">
+  </label>
+  <label>Rua
+    <input type="text" id="rua" name="rua" maxlength="150" required autocomplete="address-line1" value="{{ valores.get('rua', '') }}">
+  </label>
+  <label>Número
+    <input type="text" name="numero" maxlength="10" required value="{{ valores.get('numero', '') }}">
+  </label>
+  <label>Complemento (opcional)
+    <input type="text" name="complemento" maxlength="80" value="{{ valores.get('complemento', '') }}">
+  </label>
+  <label>Bairro
+    <input type="text" id="bairro" name="bairro" maxlength="80" required value="{{ valores.get('bairro', '') }}">
+  </label>
+  <label>Cidade
+    <input type="text" id="cidade" name="cidade" maxlength="80" required value="{{ valores.get('cidade', '') }}">
+  </label>
+  <label>Estado (sigla)
+    <input type="text" id="estado" name="estado" maxlength="2" required placeholder="DF" value="{{ valores.get('estado', '') }}">
+  </label>
+
+  <label class="check">
+    <input type="checkbox" name="consentimento" required {{ 'checked' if valores.get('consentimento') }}>
+    <span>Autorizo o uso dos meus dados apenas para processar e entregar este pedido.</span>
+  </label>
+
+  <button type="submit">Enviar meus dados</button>
+</form>
+
+<script>
+  const campoCep = document.getElementById("cep");
+
+  async function buscarCep() {
+    const digitos = campoCep.value.replace(/\D/g, "");
+    if (digitos.length !== 8) return;
+    try {
+      const resposta = await fetch("https://viacep.com.br/ws/" + digitos + "/json/");
+      const dados = await resposta.json();
+      if (dados.erro) return;
+      document.getElementById("rua").value = dados.logradouro || "";
+      document.getElementById("bairro").value = dados.bairro || "";
+      document.getElementById("cidade").value = dados.localidade || "";
+      document.getElementById("estado").value = dados.uf || "";
+    } catch (e) {
+      /* se falhar, o cliente preenche à mão */
+    }
+  }
+
+  campoCep.addEventListener("blur", buscarCep);
+  campoCep.addEventListener("input", function () {
+    if (campoCep.value.replace(/\D/g, "").length === 8) buscarCep();
+  });
+</script>
+{% endblock %}

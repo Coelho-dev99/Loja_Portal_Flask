@@ -20,10 +20,7 @@ CREATE UNIQUE INDEX uq_clientes_cpf ON clientes (cpf) WHERE cpf IS NOT NULL;
 -- ENDERECOS
 CREATE TABLE enderecos (
     id           SERIAL PRIMARY KEY,
-    cliente_id   INTEGER      NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
-    cep          CHAR(8)      NOT NULL,
-    rua          VARCHAR(150) NOT NULL,
-    numero       VARCHAR(10)  NOT NULL,
+    cliente_id   INTEGER   NOT NULL,
     complemento  VARCHAR(80),
     bairro       VARCHAR(80)  NOT NULL,
     cidade       VARCHAR(80)  NOT NULL,
@@ -54,9 +51,9 @@ INSERT INTO tipos_personalizado (nome) VALUES
     ('Quadro'),
     ('Moldura'),
     ('Outros');
-
+e
 -- PEDIDOS
--- cliente_id e endereco_id comecam vazios: sao preenchidos quando o
+-- cliente_id e ndereco_id comecam vazios: sao preenchidos quando o
 -- cliente abre o link unico (token) e envia o formulario.
 CREATE TABLE pedidos (
     id                     SERIAL PRIMARY KEY,
@@ -65,7 +62,10 @@ CREATE TABLE pedidos (
     token                  VARCHAR(64) NOT NULL UNIQUE,
     status                 VARCHAR(20) NOT NULL DEFAULT 'aguardando_dados'
         CHECK (status IN ('aguardando_dados', 'confirmado', 'pago',
-                          'enviado', 'entregue', 'cancelado')),
+                          'enviado', 'entr    NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    cep          CHAR(8)      NOT NULL,
+    rua          VARCHAR(150) NOT NULL,
+    numero       VARCHAR(10) egue', 'cancelado')),
     observacoes            TEXT,
     criado_em              TIMESTAMP NOT NULL DEFAULT NOW(),
     dados_preenchidos_em   TIMESTAMP

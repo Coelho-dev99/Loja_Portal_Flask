@@ -81,3 +81,55 @@ tr.inativo td { opacity: 0.55; }
 .aviso { padding: 0.6rem 0.8rem; border-radius: 6px; }
 .aviso.ok { background: #e3f1e3; }
 .aviso.erro { background: #f8e0e0; }
+
+/* ---- Pedidos ---- */
+select {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.topo nav { display: flex; gap: 1.2rem; }
+
+.nota { color: #6b6b6b; }
+
+.caixa {
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+}
+.caixa h2 { margin-top: 0; font-size: 1.05rem; }
+
+.linha-link { display: flex; gap: 0.5rem; }
+.linha-link input { flex: 1; min-width: 0; }
+
+.status {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: #eee;
+}
+.status.aguardando_dados { background: #fdf0cf; }
+.status.confirmado { background: #dcebf7; }
+.status.pago { background: #e3f1e3; }
+.status.enviado { background: #e6e0f5; }
+.status.entregue { background: #cfe8d5; }
+.status.cancelado { background: #f8e0e0; }
+
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem; margin: 0; }
+dt { font-weight: 600; }
+dd { margin: 0; }
+
+tfoot td { font-weight: 600; }
+
+.form label.check {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-weight: 400;
+}

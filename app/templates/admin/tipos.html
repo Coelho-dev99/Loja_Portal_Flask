@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Tipos de peça · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<h1>Tipos de peça personalizada</h1>
+<p class="nota">Usados nos pedidos personalizados e no relatório mensal.</p>
+
+<div class="tabela">
+  <table>
+    <thead><tr><th>Tipo</th><th>Vezes usado</th></tr></thead>
+    <tbody>
+    {% for t in tipos %}
+      <tr><td>{{ t.nome }}</td><td>{{ t.usos }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<section class="caixa">
+  <h2>Novo tipo</h2>
+  <form method="post" class="form">
+    <label>Nome
+      <input type="text" name="nome" maxlength="60" required placeholder="Ex.: Chaveiro">
+    </label>
+    <button type="submit">Adicionar tipo</button>
+  </form>
+</section>
+{% endblock %}

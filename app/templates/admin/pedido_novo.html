@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Novo pedido · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<h1>Novo pedido</h1>
+<p class="nota">Depois de criar, você adiciona as peças e recebe o link para enviar ao cliente.</p>
+
+<form method="post" class="form">
+  <label>Referência (opcional)
+    <input type="text" name="referencia" maxlength="200" placeholder="Ex.: @maria no Instagram, tapete da padaria">
+  </label>
+  <p class="nota">Serve só para você identificar o pedido até o cliente preencher os dados.</p>
+  <div class="linha">
+    <button type="submit">Criar pedido</button>
+    <a href="{{ url_for('admin_pedidos.lista') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

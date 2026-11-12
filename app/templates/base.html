@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% block head %}{% endblock %}
   <title>{% block titulo %}Portal La.B{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -11,7 +12,9 @@
   <header class="topo">
     <strong>Portal La.B · Painel</strong>
     <nav>
+      <a href="{{ url_for('admin_pedidos.lista') }}">Pedidos</a>
       <a href="{{ url_for('admin.produtos') }}">Produtos</a>
+      <a href="{{ url_for('admin.tipos') }}">Tipos</a>
     </nav>
     <form method="post" action="{{ url_for('admin.logout') }}">
       <button type="submit" class="link">Sair</button>

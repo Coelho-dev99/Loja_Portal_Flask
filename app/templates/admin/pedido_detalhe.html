@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block titulo %}Pedido {{ pedido.id }} · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<div class="linha">
+  <h1>Pedido #{{ pedido.id }}</h1>
+  <span class="status {{ pedido.status }}">{{ pedido.status|rotulo_status }}</span>
+</div>
+{% if pedido.observacoes %}
+<p class="nota">Referência: {{ pedido.observacoes }}</p>
+{% endif %}
+
+<h2>Itens</h2>
+{% if itens %}
+<div class="tabela">
+  <table>
+    <thead>
+      <tr><th>Item</th><th>Tipo</th><th>Qtd</th><th>Valor unit.</th><th>Subtotal</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for i in itens %}
+      <tr>
+        <td>
+          {% if i.tipo == 'pronta_entrega' %}{{ i.produto_nome }}{% else %}{{ i.tipo_nome }}: {{ i.descricao }}{% endif %}
+        </td>
+        <td>{{ 'Pronta entrega' if i.tipo == 'pronta_entrega' else 'Personalizado' }}</td>
+        <td>{{ i.quantidade }}</td>
+        <td>R$ {{ i.valor_unitario|brl }}</td>
+        <td>R$ {{ (i.quantidade * i.valor_unitario)|brl }}</td>
+        <td>
+          {% if pedido.status == 'aguardando_dados' %}
+          <form method="post" action="{{ url_for('admin_pedidos.item_remover', pedido_id=pedido.id, item_id=i.id) }}">
+            <button type="submit" class="link">Remover</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4">Total</td><td colspan="2">R$ {{ total|brl }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<p>Nenhum item ainda. Adicione abaixo.</p>
+{% endif %}
+
+{% if pedido.status == 'aguardando_dados' %}
+  {% if itens %}
+  <section class="caixa">
+    <h2>Link para o cliente</h2>
+    <p class="nota">Envie na conversa do Instagram. O link serve só para este pedido.</p>
+    <div class="linha-link">
+      <input type="text" id="link" value="{{ link }}" readonly>
+      <button type="button" id="copiar">Copiar</button>
+    </div>
+  </section>
+  <script>
+    document.getElementById("copiar").addEventListener("click", async function () {
+      const campo = document.getElementById("link");
+      try {
+        await navigator.clipboard.writeText(campo.value);
+        this.textContent = "Copiado!";
+      } catch (e) {
+        campo.select();
+        this.textContent = "Selecionado: use Ctrl+C";
+      }
+    });
+  </script>
+  {% endif %}
+
+  <section class="caixa">
+    <h2>Adicionar peça de pronta entrega</h2>
+    {% if produtos %}
+    <form method="post" action="{{ url_for('admin_pedidos.item_pronta_entrega', pedido_id=pedido.id) }}" class="form">
+      <label>Produto
+        <select name="produto_id" required>
+          {% for p in produtos %}
+          <option value="{{ p.id }}">{{ p.nome }} · R$ {{ p.preco|brl }} ({{ p.estoque }} em estoque)</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Quantidade
+        <input type="number" name="quantidade" min="1" value="1" required>
+      </label>
+      <label>Valor unitário (opcional)
+        <input type="text" name="valor" inputmode="decimal" placeholder="Vazio usa o preço do produto">
+      </label>
+      <button type="submit">Adicionar</button>
+    </form>
+    {% else %}
+    <p>Nenhum produto com estoque disponível. <a href="{{ url_for('admin.produtos') }}">Ver produtos</a></p>
+    {% endif %}
+  </section>
+
+  <section class="caixa">
+    <h2>Adicionar peça personalizada</h2>
+    <form method="post" action="{{ url_for('admin_pedidos.item_personalizado', pedido_id=pedido.id) }}" class="form">
+      <label>Tipo
+        <select name="tipo_id" required>
+          {% for t in tipos %}<option value="{{ t.id }}">{{ t.nome }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Descrição
+        <textarea name="descricao" rows="3" maxlength="1000" required placeholder="Ex.: Tapete com a marca do cliente, 60x40 cm"></textarea>
+      </label>
+      <label>Quantidade
+        <input type="number" name="quantidade" min="1" value="1" required>
+      </label>
+      <label>Valor combinado (R$)
+        <input type="text" name="valor" inputmode="decimal" required placeholder="Ex.: 280,00">
+      </label>
+      <button type="submit">Adicionar</button>
+    </form>
+  </section>
+{% endif %}
+
+{% if pedido.cliente_id %}
+<section class="caixa">
+  <h2>Dados do cliente</h2>
+  <dl>
+    <dt>Nome</dt><dd>{{ pedido.cliente_nome }}</dd>
+    <dt>Telefone</dt><dd>{{ pedido.telefone|fone }}</dd>
+    {% if pedido.instagram %}<dt>Instagram</dt><dd>@{{ pedido.instagram }}</dd>{% endif %}
+    {% if pedido.cpf %}<dt>CPF</dt><dd>{{ pedido.cpf|cpf }}</dd>{% endif %}
+    <dt>Endereço</dt>
+    <dd>
+      {{ pedido.rua }}, {{ pedido.numero }}{% if pedido.complemento %} - {{ pedido.complemento }}{% endif %}<br>
+      {{ pedido.bairro }} · {{ pedido.cidade }}/{{ pedido.estado }}<br>
+      CEP {{ pedido.cep|cep }}
+    </dd>
+    <dt>Dados enviados em</dt><dd>{{ pedido.dados_preenchidos_em|data_br }}</dd>
+  </dl>
+</section>
+{% endif %}
+
+{% if proximos %}
+<section class="caixa">
+  <h2>Andamento</h2>
+  <form method="post" action="{{ url_for('admin_pedidos.mudar_status', pedido_id=pedido.id) }}" class="linha"
+        onsubmit="return this.status.value !== 'cancelado' || confirm('Cancelar este pedido?');">
+    <select name="status">
+      {% for s in proximos %}<option value="{{ s }}">{{ s|rotulo_status }}</option>{% endfor %}
+    </select>
+    <button type="submit">Atualizar status</button>
+  </form>
+  {% if pedido.status != 'aguardando_dados' %}
+  <p class="nota">Cancelar devolve ao estoque as peças de pronta entrega deste pedido.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<p><a href="{{ url_for('admin_pedidos.lista') }}">← Voltar para os pedidos</a></p>
+{% endblock %}
