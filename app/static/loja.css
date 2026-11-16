@@ -445,3 +445,101 @@ input[type="text"]:focus-visible, input[type="tel"]:focus-visible { outline-offs
 .campo-resumo { display: grid; gap: 0.4rem; margin: 1.2rem 0 1.8rem; font-weight: 600; max-width: 560px; }
 .campo-resumo textarea { font-size: 0.95rem; line-height: 1.5; }
 .itens-enviado { max-width: 560px; }
+
+.campo-resumo textarea { font-weight: 400; }
+
+/* ---- Frete ---- */
+.opcoes-frete { display: grid; gap: 0.6rem; }
+.opcoes-frete .opcao span { font-weight: 600; }
+.totais {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1.2rem;
+  margin: 0 0 1rem;
+  max-width: 560px;
+}
+.totais dt { font-weight: 600; }
+.totais dd { margin: 0; }
+
+/* ---- Topo: Meu pedido + Carrinho ---- */
+.nav-topo { display: flex; align-items: center; gap: 0.9rem; }
+.link-pedido {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+.link-pedido:hover { color: var(--laranja); }
+.link-pedido:focus-visible { outline-color: #fff; }
+
+/* ---- Acompanhar pedido ---- */
+.form-acompanhar { max-width: 420px; }
+
+.cabecalho-pedido { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1rem; margin-bottom: 0.4rem; }
+.cabecalho-pedido h1 { margin: 0; }
+.selo-status {
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  background: var(--linha);
+  color: var(--tinta);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.selo-status.status-pago, .selo-status.status-concluido { background: #cfe8d5; }
+.selo-status.status-processando, .selo-status.status-enviado { background: #dcd2f5; }
+.selo-status.status-aguardando_pagamento { background: #fde7bf; }
+.selo-status.status-cancelado { background: #f4d4d4; }
+.mensagem-status { font-size: 1.05rem; margin-bottom: 1.5rem; }
+
+/* A linha do tempo e uma costura: pontos ligados por um fio tracejado */
+.linha-do-tempo { list-style: none; margin: 0 0 2rem; padding: 0; display: grid; gap: 1.1rem; max-width: 560px; }
+.linha-do-tempo li { position: relative; padding-left: 2.2rem; display: grid; gap: 0.1rem; }
+.linha-do-tempo li::before {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  top: 1.35rem;
+  bottom: -1.1rem;
+  border-left: 2px dashed var(--linha);
+}
+.linha-do-tempo li:last-child::before { display: none; }
+.linha-do-tempo .ponto {
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 2px solid var(--linha);
+  background: var(--papel);
+}
+.linha-do-tempo .feito .ponto { background: var(--violeta); border-color: var(--violeta); }
+.linha-do-tempo .atual .ponto {
+  background: var(--laranja);
+  border-color: var(--laranja);
+  box-shadow: 0 0 0 4px rgba(243, 154, 61, 0.28);
+}
+.linha-do-tempo .pendente { color: var(--cinza); }
+.linha-do-tempo small { color: var(--cinza); }
+.etiqueta-atual { color: var(--tinta); font-size: 0.85rem; font-weight: 700; }
+
+.historico-simples { margin: 0 0 2rem; padding-left: 1.2rem; }
+
+.caixa-rastreio {
+  max-width: 560px;
+  margin: 0 0 2rem;
+  padding: 1rem 1.2rem;
+  background: var(--papel);
+  border: 2px dashed var(--laranja);
+  border-radius: 14px;
+}
+.caixa-rastreio h2 { margin-top: 0; }
+.caixa-rastreio p { margin-bottom: 0.5rem; }
+.codigo-rastreio { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.1rem; letter-spacing: 0.04em; }
+
+.aviso-acompanhar {
+  max-width: 560px;
+  margin: 2rem 0;
+  padding-top: 1.2rem;
+  border-top: 2px dashed var(--linha);
+}

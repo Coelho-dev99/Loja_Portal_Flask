@@ -3,8 +3,10 @@ venv/
 
 # Segredos
 .env
-.env.example
 
 # Python
 __pycache__/
 *.pyc
+
+# Fotos enviadas pelo painel (ficam so no servidor)
+app/static/uploads/

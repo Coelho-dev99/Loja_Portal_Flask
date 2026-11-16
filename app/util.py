@@ -32,3 +32,11 @@ def ler_inteiro(texto, minimo, maximo):
     except ValueError:
         return None
     return valor if minimo <= valor <= maximo else None
+
+
+def normalizar_telefone(texto):
+    """Deixa so os numeros do telefone e tira o 55 do pais, se houver."""
+    digitos = re.sub(r"\D", "", texto or "")
+    if len(digitos) in (12, 13) and digitos.startswith("55"):
+        digitos = digitos[2:]
+    return digitos

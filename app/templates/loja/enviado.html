@@ -8,9 +8,9 @@
 
 <div class="passos-direct">
   <button type="button" class="botao" id="copiar-resumo">Copiar resumo do pedido</button>
-  <a class="botao botao-contorno" href="https://ig.me/m/{{ instagram_usuario }}">Abrir o direct</a>
+  <a class="botao botao-contorno" href="https://www.instagram.com/{{ instagram_usuario }}/" target="_blank" rel="noopener">Abrir o Instagram</a>
 </div>
-<p class="nota">No celular, o segundo botão abre a conversa direto. No computador, procure por @{{ instagram_usuario }} no Instagram. Cole o resumo na conversa para agilizar o atendimento.</p>
+<p class="nota">Abra o perfil @{{ instagram_usuario }}, toque em "Mensagem" (no computador, "Enviar mensagem") e cole o resumo na conversa para agilizar o atendimento. No celular, <a href="https://ig.me/m/{{ instagram_usuario }}">este atalho</a> abre a conversa direto.</p>
 
 <label class="campo-resumo">Resumo do pedido
   <textarea id="texto-resumo" rows="{{ 8 + itens|length }}" readonly>{{ texto }}</textarea>
@@ -28,7 +28,33 @@
   </li>
   {% endfor %}
 </ul>
-<p>Peças com valor fechado: <strong>R$ {{ subtotal|brl }}</strong>{% if tem_a_combinar %} (mais as peças personalizadas, a combinar){% endif %}. Frete: a confirmar.</p>
+<dl class="totais">
+  {% if subtotal > 0 %}
+  <dt>Peças com valor fechado</dt><dd>R$ {{ subtotal|brl }}</dd>
+  {% endif %}
+  {% if tem_a_combinar %}
+  <dt>Peças personalizadas</dt><dd>valor a combinar no chat</dd>
+  {% endif %}
+  <dt>Frete</dt>
+  <dd>
+    {% if pedido.frete_valor is not none %}
+      R$ {{ pedido.frete_valor|brl }}
+      {%- if pedido.frete_servico %} · {{ pedido.frete_servico }}{% endif %}
+      {%- if pedido.frete_prazo_dias is not none %} · {{ pedido.frete_prazo_dias }} dias úteis{% endif %}
+      {%- if tem_a_combinar %} (estimativa){% endif %}
+    {% else %}
+      a confirmar no chat
+    {% endif %}
+  </dd>
+  {% if pedido.frete_valor is not none and not tem_a_combinar and subtotal > 0 %}
+  <dt>Total</dt><dd><strong>R$ {{ (subtotal + pedido.frete_valor)|brl }}</strong></dd>
+  {% endif %}
+</dl>
+<section class="aviso-acompanhar">
+  <h2>Acompanhe o seu pedido</h2>
+  <p>Guarde o número <strong>{{ pedido.id }}</strong>. Com ele e o telefone informado, você vê o andamento do pedido quando quiser.</p>
+  <p><a class="botao botao-contorno" href="{{ url_for('acompanhar.formulario', pedido=pedido.id) }}">Acompanhar pedido</a></p>
+</section>
 <p><a href="{{ url_for('loja.catalogo') }}">Voltar para a loja</a></p>
 
 <script>

@@ -57,8 +57,10 @@
   <aside class="resumo">
     <h2>Resumo</h2>
     <dl>
+      {% if subtotal > 0 or not tem_personalizado %}
       <dt>Peças com valor fechado</dt>
       <dd>R$ {{ subtotal|brl }}</dd>
+      {% endif %}
       {% if tem_personalizado %}
       <dt>Peças personalizadas</dt>
       <dd>valor combinado no chat</dd>

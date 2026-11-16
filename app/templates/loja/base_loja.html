@@ -18,9 +18,12 @@
       {% endif %}
       <span>{{ loja_nome }}</span>
     </a>
-    <a class="link-carrinho" href="{{ url_for('loja.ver_carrinho') }}">
-      Carrinho{% if carrinho_qtd %} <span class="contador">{{ carrinho_qtd }}</span>{% endif %}
-    </a>
+    <nav class="nav-topo" aria-label="Principal">
+      <a class="link-pedido" href="{{ url_for('acompanhar.formulario') }}">Meu pedido</a>
+      <a class="link-carrinho" href="{{ url_for('loja.ver_carrinho') }}">
+        Carrinho{% if carrinho_qtd %} <span class="contador">{{ carrinho_qtd }}</span>{% endif %}
+      </a>
+    </nav>
   </header>
 
   <main id="conteudo" class="miolo">
@@ -36,9 +39,9 @@
   <footer class="rodape-loja">
     <p>Atendimento e pagamento pelo Instagram. Tire suas dúvidas antes de fechar o pedido.</p>
     <p>
-      <a href="https://ig.me/m/{{ instagram_usuario }}">Chamar no direct</a>
+      <a href="{{ url_for('acompanhar.formulario') }}">Acompanhar pedido</a>
       <span class="separador" aria-hidden="true"></span>
-      <a href="https://www.instagram.com/{{ instagram_usuario }}/">@{{ instagram_usuario }}</a>
+      <a href="https://www.instagram.com/{{ instagram_usuario }}/">Chamar no Instagram: @{{ instagram_usuario }}</a>
     </p>
   </footer>
 </body>

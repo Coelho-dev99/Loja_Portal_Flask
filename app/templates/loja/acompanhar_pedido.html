@@ -1,0 +1,67 @@
+{% extends "loja/base_loja.html" %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block titulo %}Pedido {{ pedido.id }} · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pedido">
+  <h1>Pedido nº {{ pedido.id }}</h1>
+  <span class="selo-status status-{{ pedido.status }}">{{ rotulo }}</span>
+</div>
+<p class="mensagem-status">{{ mensagem }}</p>
+
+{% if pedido.status == 'cancelado' %}
+<h2>Histórico</h2>
+<ul class="historico-simples">
+  {% for h in historico %}
+  <li>{{ h.status|rotulo_status }} · {{ h.criado_em|data_br }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<h2>Andamento</h2>
+<ol class="linha-do-tempo">
+  {% for e in etapas %}
+  <li class="{{ e.estado }}" {% if e.estado == 'atual' %}aria-current="step"{% endif %}>
+    <span class="ponto" aria-hidden="true"></span>
+    <strong>{{ e.rotulo }}</strong>
+    {% if e.estado == 'atual' %}<span class="etiqueta-atual">etapa atual</span>{% endif %}
+    {% if e.data %}<small>{{ e.data|data_br }}</small>{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{% if mostrar_rastreio %}
+<section class="caixa-rastreio">
+  <h2>Rastreio</h2>
+  <p>Código: <strong class="codigo-rastreio">{{ pedido.codigo_rastreio }}</strong></p>
+  {% if pedido.frete_servico %}<p class="nota">Envio: {{ pedido.frete_servico }}{% if pedido.frete_prazo_dias is not none %} · prazo de {{ pedido.frete_prazo_dias }} dias úteis{% endif %}</p>{% endif %}
+  {% if correios %}
+  <p><a href="https://rastreamento.correios.com.br/" target="_blank" rel="noopener">Abrir o rastreamento dos Correios</a> e colar o código.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<h2>Itens</h2>
+<ul class="itens-resumo itens-enviado">
+  {% for i in itens %}
+  <li>
+    <span>
+      {{ i.quantidade }}x
+      {% if i.tipo == 'pronta_entrega' %}{{ i.produto_nome }}{% else %}{{ i.tipo_nome }} personalizado<small class="descricao-resumo">{{ i.descricao }}</small>{% endif %}
+    </span>
+    <span>{% if i.valor_unitario is not none %}R$ {{ (i.quantidade * i.valor_unitario)|brl }}{% else %}a combinar{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>
+
+<dl class="totais">
+  {% if subtotal > 0 %}<dt>Peças com valor fechado</dt><dd>R$ {{ subtotal|brl }}</dd>{% endif %}
+  {% if tem_a_combinar %}<dt>Peças personalizadas</dt><dd>valor a combinar no chat</dd>{% endif %}
+  <dt>Frete</dt>
+  <dd>{% if pedido.frete_valor is not none %}R$ {{ pedido.frete_valor|brl }}{% else %}a confirmar no chat{% endif %}</dd>
+  {% if total is not none %}<dt>Total</dt><dd><strong>R$ {{ total|brl }}</strong></dd>{% endif %}
+</dl>
+
+<p class="nota">Dúvidas sobre o seu pedido? <a href="https://www.instagram.com/{{ instagram_usuario }}/">Fale com a gente no Instagram</a>.</p>
+<p><a href="{{ url_for('loja.catalogo') }}">Voltar para a loja</a></p>
+{% endblock %}

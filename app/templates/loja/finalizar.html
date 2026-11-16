@@ -61,9 +61,15 @@
       </label>
     </fieldset>
 
-    <fieldset>
-      <legend>Frete e pagamento</legend>
-      <p>O frete é calculado com base no seu CEP e confirmado na conversa do Instagram, antes do pagamento. O pagamento também é combinado por lá, com um link enviado para você.</p>
+    <fieldset id="bloco-frete">
+      <legend>Frete</legend>
+      <p id="frete-aviso">Informe o CEP para ver as opções de frete.</p>
+      <div id="frete-opcoes" class="opcoes-frete" role="radiogroup" aria-labelledby="frete-aviso"
+           data-url="{{ url_for('checkout.cotar_frete') }}"
+           data-selecionado="{{ valores.get('frete_opcao', '') }}"
+           data-subtotal="{{ subtotal }}"
+           data-personalizado="{{ '1' if tem_personalizado else '0' }}"></div>
+      <p class="nota">O pagamento é combinado na conversa do Instagram, com um link enviado para você.</p>
     </fieldset>
 
     <label class="opcao consentimento">
@@ -85,12 +91,18 @@
       {% endfor %}
     </ul>
     <dl>
+      {% if subtotal > 0 or not tem_personalizado %}
       <dt>Peças com valor fechado</dt>
       <dd>R$ {{ subtotal|brl }}</dd>
+      {% endif %}
       {% if tem_personalizado %}
       <dt>Peças personalizadas</dt>
       <dd>valor combinado no chat</dd>
       {% endif %}
+      <dt>Frete</dt>
+      <dd id="resumo-frete">informe o CEP</dd>
+      <dt id="rotulo-total" hidden>Total</dt>
+      <dd id="resumo-total" hidden></dd>
     </dl>
     <p><a href="{{ url_for('loja.ver_carrinho') }}">Voltar ao carrinho</a></p>
   </aside>
@@ -129,5 +141,106 @@
     el.addEventListener("change", atualizarComplemento);
   });
   atualizarComplemento();
+</script>
+
+{% if frete_inicial %}
+<script id="frete-inicial" type="application/json">{{ frete_inicial|tojson }}</script>
+{% endif %}
+
+<script>
+  (function () {
+    const campoCep = document.getElementById("cep");
+    const aviso = document.getElementById("frete-aviso");
+    const caixa = document.getElementById("frete-opcoes");
+    const resumoFrete = document.getElementById("resumo-frete");
+    const rotuloTotal = document.getElementById("rotulo-total");
+    const resumoTotal = document.getElementById("resumo-total");
+    const subtotal = parseFloat(caixa.dataset.subtotal || "0");
+    const temPersonalizado = caixa.dataset.personalizado === "1";
+    const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    let cepConsultado = "";
+
+    function mostrarResumo(opcao, texto) {
+      if (!opcao) {
+        resumoFrete.textContent = texto || "a confirmar no chat";
+        rotuloTotal.hidden = true;
+        resumoTotal.hidden = true;
+        return;
+      }
+      const valor = parseFloat(opcao.valor);
+      resumoFrete.textContent = moeda.format(valor);
+      if (!temPersonalizado) {
+        rotuloTotal.hidden = false;
+        resumoTotal.hidden = false;
+        resumoTotal.textContent = moeda.format(subtotal + valor);
+      }
+    }
+
+    function desenhar(dados) {
+      caixa.replaceChildren();
+      aviso.textContent = dados.mensagem;
+      if (dados.status !== "ok") {
+        mostrarResumo(null);
+        return;
+      }
+      mostrarResumo(null, "escolha uma opção");
+      dados.opcoes.forEach(function (o) {
+        const rotulo = document.createElement("label");
+        rotulo.className = "opcao";
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "frete_opcao";
+        radio.value = String(o.id);
+        radio.required = true;
+        if (caixa.dataset.selecionado === String(o.id)) {
+          radio.checked = true;
+          mostrarResumo(o);
+        }
+        radio.addEventListener("change", function () { mostrarResumo(o); });
+        const texto = document.createElement("span");
+        texto.textContent = o.empresa + " " + o.nome + ": " + o.valor_texto +
+          (o.prazo !== null ? " · " + o.prazo + " dias úteis" : "");
+        rotulo.append(radio, texto);
+        caixa.append(rotulo);
+      });
+    }
+
+    async function consultar() {
+      const digitos = campoCep.value.replace(/\D/g, "");
+      if (digitos.length !== 8 || digitos === cepConsultado) return;
+      cepConsultado = digitos;
+      caixa.replaceChildren();
+      aviso.textContent = "Calculando o frete...";
+      mostrarResumo(null, "calculando...");
+      try {
+        const resposta = await fetch(caixa.dataset.url + "?cep=" + digitos, {
+          headers: { Accept: "application/json" },
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok) {
+          aviso.textContent = dados.mensagem || "Não consegui calcular o frete agora.";
+          mostrarResumo(null);
+          cepConsultado = "";
+          return;
+        }
+        desenhar(dados);
+      } catch (e) {
+        aviso.textContent = "Não consegui calcular o frete agora. Ele será confirmado na conversa do Instagram.";
+        mostrarResumo(null);
+        cepConsultado = "";
+      }
+    }
+
+    campoCep.addEventListener("blur", consultar);
+    campoCep.addEventListener("input", consultar);
+
+    const inicial = document.getElementById("frete-inicial");
+    if (inicial) {
+      cepConsultado = campoCep.value.replace(/\D/g, "");
+      desenhar(JSON.parse(inicial.textContent));
+    } else {
+      consultar();
+    }
+  })();
 </script>
 {% endblock %}

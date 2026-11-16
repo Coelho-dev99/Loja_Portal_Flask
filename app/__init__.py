@@ -85,6 +85,8 @@ def create_app():
     from app.routes.admin_produtos import bp as admin_produtos_bp
     from app.routes.admin_pedidos import bp as admin_pedidos_bp
     from app.routes.checkout import bp as checkout_bp
+    from app.routes.acompanhar import bp as acompanhar_bp
+    from app.routes.admin_melhor_envio import bp as admin_melhor_envio_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(loja_bp)
@@ -92,5 +94,7 @@ def create_app():
     app.register_blueprint(admin_produtos_bp)
     app.register_blueprint(admin_pedidos_bp)
     app.register_blueprint(checkout_bp)
+    app.register_blueprint(acompanhar_bp)
+    app.register_blueprint(admin_melhor_envio_bp)
 
     return app

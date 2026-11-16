@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titulo %}Frete (Melhor Envio) · Portal Lãb{% endblock %}
+
+{% block conteudo %}
+<h1>Frete automático (Melhor Envio)</h1>
+<p class="nota">O site consulta o Melhor Envio para mostrar ao cliente as opções e os valores do frete a partir do CEP.</p>
+
+<section class="caixa">
+  <h2>1. Configuração</h2>
+  {% if faltando %}
+  <p>Faltam estas configurações no arquivo <code>.env</code> (depois de preencher, reinicie o servidor):</p>
+  <ul>
+    {% for nome in faltando %}<li><code>{{ nome }}</code></li>{% endfor %}
+  </ul>
+  {% else %}
+  <p>Tudo preenchido. Ambiente: <strong>{{ 'testes (sandbox)' if ambiente == 'sandbox' else 'produção' }}</strong> · CEP de origem: <strong>{{ cep_origem|cep }}</strong></p>
+  {% endif %}
+  {% if redirect_uri %}
+  <p class="nota">Endereço de retorno que o site usa (precisa ser idêntico ao cadastrado no aplicativo do Melhor Envio):<br><code>{{ redirect_uri }}</code></p>
+  {% endif %}
+</section>
+
+<section class="caixa">
+  <h2>2. Conexão</h2>
+  {% if conectado %}
+  <p><span class="status pago">Conectado</span> O acesso é renovado automaticamente. Validade atual até {{ expira_em|data_br }} (UTC).</p>
+  <form method="post" action="{{ url_for('admin_melhor_envio.desconectar') }}"
+        onsubmit="return confirm('Remover a conexão com o Melhor Envio? O frete volta a ser confirmado manualmente.');">
+    <button type="submit">Desconectar</button>
+  </form>
+  {% else %}
+  <p><span class="status aguardando_pagamento">Não conectado</span> Sem a conexão, o frete fica "a confirmar" nos pedidos.</p>
+  <form method="post" action="{{ url_for('admin_melhor_envio.conectar') }}">
+    <button type="submit" {{ 'disabled' if faltando }}>Conectar ao Melhor Envio</button>
+  </form>
+  <p class="nota">Você será levada ao Melhor Envio para autorizar. Depois da autorização, o navegador abre o endereço de retorno que você cadastrou no aplicativo.</p>
+
+  <h3>Já autorizou no Melhor Envio?</h3>
+  <p>Se a página que abriu depois da autorização mostrou um erro ou uma tela sem relação com a loja, tudo bem. Copie o <strong>endereço completo da barra do navegador</strong> (ele tem <code>?code=</code> no meio), volte aqui e cole abaixo. Faça isso logo: o código vale por pouco tempo.</p>
+  <form method="post" action="{{ url_for('admin_melhor_envio.colar') }}" class="form">
+    <label>Endereço da página de retorno
+      <input type="text" name="endereco" required autocomplete="off" placeholder="https://.../callback?code=...&state=...">
+    </label>
+    <button type="submit" {{ 'disabled' if faltando }}>Concluir conexão</button>
+  </form>
+  {% endif %}
+</section>
+
+{% if conectado %}
+<section class="caixa">
+  <h2>3. Testar cotação</h2>
+  <form method="post" action="{{ url_for('admin_melhor_envio.testar') }}" class="form">
+    <label>CEP de destino
+      <input type="text" name="cep" inputmode="numeric" maxlength="9" required placeholder="01018-020">
+    </label>
+    <button type="submit">Cotar um pacote de teste (300 g, 20×20×10 cm)</button>
+  </form>
+
+  {% if teste %}
+    {% if teste.erro %}
+    <p class="aviso erro">{{ teste.erro }}</p>
+    {% elif teste.opcoes %}
+    <div class="tabela">
+      <table>
+        <thead><tr><th>Serviço</th><th>Valor</th><th>Prazo</th></tr></thead>
+        <tbody>
+        {% for o in teste.opcoes %}
+          <tr><td>{{ o.empresa }} {{ o.nome }}</td><td>R$ {{ o.valor|brl }}</td><td>{% if o.prazo is not none %}{{ o.prazo }} dias úteis{% else %}—{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="nota">O Melhor Envio não retornou nenhuma opção para esse CEP.</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

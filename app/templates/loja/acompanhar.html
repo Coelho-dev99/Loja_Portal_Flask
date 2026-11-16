@@ -1,0 +1,24 @@
+{% extends "loja/base_loja.html" %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block titulo %}Meu pedido · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<h1>Acompanhar pedido</h1>
+<p>Informe o número do pedido e o telefone usado na compra.</p>
+
+{% if erro %}
+<p class="mensagem erro" role="alert">{{ erro }}</p>
+{% endif %}
+
+<form method="post" class="form-pedido form-acompanhar">
+  <label>Número do pedido
+    <input type="text" name="pedido" inputmode="numeric" required autocomplete="off" value="{{ numero }}">
+  </label>
+  <label>Telefone / WhatsApp (com DDD)
+    <input type="tel" name="telefone" required autocomplete="tel" placeholder="(61) 91234-5678" value="{{ telefone }}">
+  </label>
+  <button type="submit" class="botao">Ver meu pedido</button>
+</form>
+
+<p class="nota">O número do pedido aparece na tela de confirmação, logo depois que você finaliza a compra. Se não o encontrar, chame a gente no Instagram.</p>
+{% endblock %}

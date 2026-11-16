@@ -50,7 +50,7 @@
       </form>
       {% else %}
       <p class="esgotado">Esgotado no momento.</p>
-      <p>Quer uma peça parecida? <a href="https://ig.me/m/{{ instagram_usuario }}">Chame no direct</a> e combinamos.</p>
+      <p>Quer uma peça parecida? <a href="https://www.instagram.com/{{ instagram_usuario }}/">Chame no Instagram</a> e combinamos.</p>
       {% endif %}
     {% else %}
     <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" class="form-compra">

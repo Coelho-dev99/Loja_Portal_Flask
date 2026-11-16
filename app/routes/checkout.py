@@ -1,9 +1,10 @@
 import re
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
-from app import carrinho
+from app import carrinho, frete, limitador
 from app.db import get_db
+from app.util import ler_inteiro
 
 bp = Blueprint("checkout", __name__)
 
@@ -17,8 +18,46 @@ class ErroPedido(Exception):
     """Problema que o cliente precisa saber (estoque, item indisponivel...)."""
 
 
+MENSAGEM_CONFIRMAR = (
+    "O frete será calculado e confirmado na conversa do Instagram, antes do pagamento."
+)
+MENSAGEM_ESCOLHA = "Escolha como prefere receber:"
+MENSAGEM_ESTIMADO = (
+    "Estimativa: o valor final do frete é confirmado na conversa, quando a peça "
+    "personalizada estiver definida. Escolha uma opção:"
+)
+
+
 def so_digitos(texto):
     return re.sub(r"\D", "", texto or "")
+
+
+def brl(valor):
+    return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def cotacao_em_json(cotacao):
+    """Dados da cotacao no formato usado pela tela (so o que o cliente pode ver)."""
+    if cotacao["status"] == "ok":
+        mensagem = MENSAGEM_ESTIMADO if cotacao["estimado"] else MENSAGEM_ESCOLHA
+    else:
+        mensagem = MENSAGEM_CONFIRMAR
+    return {
+        "status": cotacao["status"],
+        "estimado": cotacao["estimado"],
+        "mensagem": mensagem,
+        "opcoes": [
+            {
+                "id": o["id"],
+                "nome": o["nome"],
+                "empresa": o["empresa"],
+                "valor": str(o["valor"]),
+                "valor_texto": f"R$ {brl(o['valor'])}",
+                "prazo": o["prazo"],
+            }
+            for o in cotacao["opcoes"]
+        ],
+    }
 
 
 # ---------------------------------------------------------------
@@ -94,7 +133,7 @@ def ler_formulario():
 # ---------------------------------------------------------------
 # Criacao do pedido (tudo numa unica transacao)
 # ---------------------------------------------------------------
-def criar_pedido(db, dados):
+def criar_pedido(db, dados, frete_escolhido=None, assinatura_cotada=None):
     """Cria o pedido a partir do carrinho e reserva o estoque.
 
     Se qualquer coisa falhar, nada e salvo. O carrinho e travado e apagado
@@ -110,6 +149,8 @@ def criar_pedido(db, dados):
         itens = linha["itens"] if linha else []
         if not itens:
             raise ErroPedido("Seu carrinho está vazio.")
+        if frete_escolhido is not None and frete.assinatura(itens) != assinatura_cotada:
+            raise ErroPedido("Seu carrinho mudou. Volte ao carrinho e confira o frete.")
 
         ids = sorted({i["produto_id"] for i in itens})
         cur.execute(
@@ -209,9 +250,18 @@ def criar_pedido(db, dados):
             )
             endereco_id = cur.fetchone()["id"]
 
+        if frete_escolhido is not None:
+            servico = f"{frete_escolhido['empresa']} {frete_escolhido['nome']}".strip()[:60] or None
+            valor_frete, prazo_frete = frete_escolhido["valor"], frete_escolhido["prazo"]
+        else:
+            servico = valor_frete = prazo_frete = None
         cur.execute(
-            "INSERT INTO pedidos (cliente_id, endereco_id) VALUES (%s, %s) RETURNING id",
-            (cliente_id, endereco_id),
+            """
+            INSERT INTO pedidos
+                (cliente_id, endereco_id, frete_valor, frete_servico, frete_prazo_dias)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id
+            """,
+            (cliente_id, endereco_id, valor_frete, servico, prazo_frete),
         )
         pedido_id = cur.fetchone()["id"]
 
@@ -240,7 +290,8 @@ def criar_pedido(db, dados):
 # ---------------------------------------------------------------
 @bp.route("/finalizar", methods=["GET", "POST"])
 def finalizar():
-    dados_carrinho = carrinho.detalhar(carrinho.carregar())
+    itens = carrinho.carregar()
+    dados_carrinho = carrinho.detalhar(itens)
     if not dados_carrinho["linhas"]:
         return redirect(url_for("loja.ver_carrinho"))
     if not dados_carrinho["pode_finalizar"]:
@@ -248,12 +299,31 @@ def finalizar():
         return redirect(url_for("loja.ver_carrinho"))
 
     erros = []
+    frete_inicial = None
     if request.method == "POST":
         dados, erros = ler_formulario()
+
+        # O frete e cotado de novo no servidor: o preco nunca vem do navegador
+        frete_escolhido = None
+        if not erros:
+            cotacao = frete.cotar_carrinho(itens, dados["cep"])
+            if cotacao["status"] == "ok":
+                escolha = ler_inteiro(request.form.get("frete_opcao", ""), 1, 2**31 - 1)
+                frete_escolhido = next(
+                    (o for o in cotacao["opcoes"] if o["id"] == escolha), None
+                )
+                if frete_escolhido is None:
+                    frete_inicial = cotacao_em_json(cotacao)
+                    erros.append(
+                        "Escolha uma das opções de frete."
+                        if escolha is None
+                        else "A opção de frete escolhida não está mais disponível. Escolha novamente."
+                    )
+
         if not erros:
             db = get_db()
             try:
-                pedido_id = criar_pedido(db, dados)
+                pedido_id = criar_pedido(db, dados, frete_escolhido, frete.assinatura(itens))
                 db.commit()
             except ErroPedido as e:
                 db.rollback()
@@ -266,8 +336,29 @@ def finalizar():
                 return redirect(url_for("checkout.enviado"))
 
     return render_template(
-        "loja/finalizar.html", **dados_carrinho, erros=erros, valores=request.form
+        "loja/finalizar.html",
+        **dados_carrinho,
+        erros=erros,
+        valores=request.form,
+        frete_inicial=frete_inicial,
     )
+
+
+@bp.route("/frete/cotar")
+def cotar_frete():
+    """Opcoes de frete do carrinho do visitante para um CEP (usada pela tela de finalizar)."""
+    cep = so_digitos(request.args.get("cep", ""))
+    if len(cep) != 8:
+        return jsonify(status="erro", mensagem="CEP inválido."), 400
+    if not limitador.permitir(f"frete:{request.remote_addr}", 30, 600):
+        return (
+            jsonify(status="erro", mensagem="Muitas consultas seguidas. Tente de novo em alguns minutos."),
+            429,
+        )
+    itens = carrinho.carregar()
+    if not itens:
+        return jsonify(status="erro", mensagem="Seu carrinho está vazio."), 400
+    return jsonify(cotacao_em_json(frete.cotar_carrinho(itens, cep)))
 
 
 def montar_resumo(pedido, itens, subtotal, tem_a_combinar):
@@ -280,11 +371,39 @@ def montar_resumo(pedido, itens, subtotal, tem_a_combinar):
                 f"- {i['quantidade']}x {i['tipo_nome']} personalizado: {i['descricao']}"
             )
     texto_subtotal = f"R$ {subtotal:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    if subtotal > 0:
+        valor = f"Peças com valor fechado: {texto_subtotal}" + (
+            " (mais peças personalizadas a combinar)" if tem_a_combinar else ""
+        )
+    else:
+        valor = "Valor: a combinar no chat"
+
+    if pedido["frete_valor"] is not None:
+        detalhe = ", ".join(
+            parte
+            for parte in (
+                pedido["frete_servico"],
+                f"{pedido['frete_prazo_dias']} dias úteis"
+                if pedido["frete_prazo_dias"] is not None
+                else None,
+            )
+            if parte
+        )
+        linha_frete = f"Frete: R$ {brl(pedido['frete_valor'])}" + (f" ({detalhe})" if detalhe else "")
+        if tem_a_combinar:
+            linha_frete += " - estimativa"
+    else:
+        linha_frete = "Frete: a confirmar"
+
     linhas += [
         "",
-        f"Peças com valor fechado: {texto_subtotal}"
-        + (" (mais peças personalizadas a combinar)" if tem_a_combinar else ""),
-        "Frete: a confirmar",
+        valor,
+        linha_frete,
+        *(
+            [f"Total com frete: R$ {brl(subtotal + pedido['frete_valor'])}"]
+            if pedido["frete_valor"] is not None and not tem_a_combinar and subtotal > 0
+            else []
+        ),
         f"Nome: {pedido['cliente_nome']}",
         f"Telefone: {pedido['telefone']}",
     ]
@@ -300,7 +419,8 @@ def enviado():
     with get_db().cursor() as cur:
         cur.execute(
             """
-            SELECT pe.id, c.nome AS cliente_nome, c.telefone
+            SELECT pe.id, pe.frete_valor, pe.frete_servico, pe.frete_prazo_dias,
+                   c.nome AS cliente_nome, c.telefone
             FROM pedidos pe JOIN clientes c ON c.id = pe.cliente_id
             WHERE pe.id = %s
             """,

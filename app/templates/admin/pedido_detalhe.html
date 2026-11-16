@@ -27,6 +27,12 @@
   </dl>
 </section>
 
+<section class="caixa">
+  <h2>Acompanhamento do cliente</h2>
+  <p class="nota">O cliente acompanha o pedido informando o número e o telefone cadastrado. Você pode enviar este link na conversa:</p>
+  <input type="text" readonly value="{{ url_for('acompanhar.formulario', pedido=pedido.id, _external=True) }}" onclick="this.select()" aria-label="Link de acompanhamento">
+</section>
+
 <h2>Itens</h2>
 <div class="tabela">
   <table>

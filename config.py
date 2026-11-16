@@ -1,4 +1,5 @@
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,3 +22,20 @@ class Config:
     # Cookie de sessao
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+
+    # Limite do total enviado numa requisicao (fotos dos produtos)
+    MAX_CONTENT_LENGTH = 40 * 1024 * 1024
+
+    # Loja
+    INSTAGRAM_USUARIO = os.getenv("INSTAGRAM_USUARIO", "portal_la.b")
+
+    # Em producao (site com HTTPS), defina COOKIES_SEGUROS=1 no .env
+    SESSION_COOKIE_SECURE = os.getenv("COOKIES_SEGUROS", "0") == "1"
+
+    # Frete automatico (Melhor Envio)
+    MELHOR_ENVIO_CLIENT_ID = os.getenv("MELHOR_ENVIO_CLIENT_ID", "").strip()
+    MELHOR_ENVIO_CLIENT_SECRET = os.getenv("MELHOR_ENVIO_CLIENT_SECRET", "").strip()
+    MELHOR_ENVIO_REDIRECT_URI = os.getenv("MELHOR_ENVIO_REDIRECT_URI", "").strip()
+    MELHOR_ENVIO_AMBIENTE = os.getenv("MELHOR_ENVIO_AMBIENTE", "producao").strip().lower()
+    CEP_ORIGEM = re.sub(r"\D", "", os.getenv("CEP_ORIGEM", ""))
+    CONTATO_API_EMAIL = os.getenv("CONTATO_API_EMAIL", "").strip()
