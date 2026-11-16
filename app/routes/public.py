@@ -5,11 +5,6 @@ from app.db import get_db
 bp = Blueprint("public", __name__)
 
 
-@bp.route("/")
-def home():
-    return "Portal La.B - em construcao"
-
-
 @bp.route("/saude")
 def saude():
     """Rota de teste da conexao com o banco. Remover antes de publicar."""

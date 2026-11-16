@@ -1,0 +1,47 @@
+{% extends "loja/base_loja.html" %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block titulo %}Pedido {{ pedido.id }} recebido · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<h1>Pedido nº {{ pedido.id }} recebido</h1>
+<p>Falta só um passo: chame a gente no Instagram para combinarmos os detalhes, o frete e o pagamento.</p>
+
+<div class="passos-direct">
+  <button type="button" class="botao" id="copiar-resumo">Copiar resumo do pedido</button>
+  <a class="botao botao-contorno" href="https://ig.me/m/{{ instagram_usuario }}">Abrir o direct</a>
+</div>
+<p class="nota">No celular, o segundo botão abre a conversa direto. No computador, procure por @{{ instagram_usuario }} no Instagram. Cole o resumo na conversa para agilizar o atendimento.</p>
+
+<label class="campo-resumo">Resumo do pedido
+  <textarea id="texto-resumo" rows="{{ 8 + itens|length }}" readonly>{{ texto }}</textarea>
+</label>
+
+<h2>Itens</h2>
+<ul class="itens-resumo itens-enviado">
+  {% for i in itens %}
+  <li>
+    <span>
+      {{ i.quantidade }}x
+      {% if i.tipo == 'pronta_entrega' %}{{ i.produto_nome }}{% else %}{{ i.tipo_nome }} personalizado<small class="descricao-resumo">{{ i.descricao }}</small>{% endif %}
+    </span>
+    <span>{% if i.valor_unitario is not none %}R$ {{ (i.quantidade * i.valor_unitario)|brl }}{% else %}a combinar{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>
+<p>Peças com valor fechado: <strong>R$ {{ subtotal|brl }}</strong>{% if tem_a_combinar %} (mais as peças personalizadas, a combinar){% endif %}. Frete: a confirmar.</p>
+<p><a href="{{ url_for('loja.catalogo') }}">Voltar para a loja</a></p>
+
+<script>
+  document.getElementById("copiar-resumo").addEventListener("click", async function () {
+    const campo = document.getElementById("texto-resumo");
+    try {
+      await navigator.clipboard.writeText(campo.value);
+      this.textContent = "Resumo copiado!";
+    } catch (e) {
+      campo.focus();
+      campo.select();
+      this.textContent = "Selecionado: use Ctrl+C";
+    }
+  });
+</script>
+{% endblock %}

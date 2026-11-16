@@ -4,32 +4,110 @@
 {% block conteudo %}
 <h1>{{ titulo }}</h1>
 
-<form method="post" class="form">
+<form method="post" enctype="multipart/form-data" class="form">
   <label>Nome
     <input type="text" name="nome" maxlength="120" required value="{{ produto.nome or '' }}">
   </label>
 
   <label>Descrição
-    <textarea name="descricao" rows="4">{{ produto.descricao or '' }}</textarea>
+    <textarea name="descricao" rows="4" maxlength="3000">{{ produto.descricao or '' }}</textarea>
   </label>
 
-  <label>Preço (R$)
+  <label>Categoria
+    <select name="categoria_id">
+      <option value="">Sem categoria</option>
+      {% for c in categorias %}
+      <option value="{{ c.id }}" {{ 'selected' if produto.categoria_id == c.id }}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <fieldset class="grupo">
+    <legend>Modalidade</legend>
+    <label class="check">
+      <input type="radio" name="modalidade" value="pronta_entrega" {{ 'checked' if produto.modalidade != 'personalizavel' }}>
+      <span>Pronta entrega (a peça existe e tem estoque)</span>
+    </label>
+    <label class="check">
+      <input type="radio" name="modalidade" value="personalizavel" {{ 'checked' if produto.modalidade == 'personalizavel' }}>
+      <span>Personalizável (feito sob encomenda; o cliente descreve o que quer)</span>
+    </label>
+  </fieldset>
+
+  <label id="bloco-tipo">Tipo da peça personalizada (para o relatório)
+    <select name="tipo_personalizado_id">
+      <option value="">Escolha...</option>
+      {% for t in tipos %}
+      <option value="{{ t.id }}" {{ 'selected' if produto.tipo_personalizado_id == t.id }}>{{ t.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Preço (R$) <small class="nota">Em produto personalizável, é o valor "a partir de".</small>
     <input type="text" name="preco" inputmode="decimal" required
            value="{{ '' if produto.preco is none else produto.preco }}">
   </label>
 
-  <label>Quantidade em estoque
-    <input type="number" name="estoque" min="0" required
+  <label id="bloco-estoque">Quantidade em estoque
+    <input type="number" name="estoque" min="0"
            value="{{ 0 if produto.estoque is none or produto.estoque is undefined else produto.estoque }}">
   </label>
 
-  <label>Link da foto (opcional)
-    <input type="url" name="foto_url" maxlength="255" value="{{ produto.foto_url or '' }}">
+  <fieldset class="grupo">
+    <legend>Embalagem para o frete</legend>
+    <p class="nota">Peso e medidas da peça já embalada. Obrigatórios em pronta entrega.</p>
+    <div class="trio">
+      <label>Peso (g)
+        <input type="number" name="peso_g" min="1" max="30000" value="{{ '' if produto.peso_g is none or produto.peso_g is undefined else produto.peso_g }}">
+      </label>
+      <label>Altura (cm)
+        <input type="text" name="altura_cm" inputmode="decimal" value="{{ '' if produto.altura_cm is none or produto.altura_cm is undefined else produto.altura_cm }}">
+      </label>
+      <label>Largura (cm)
+        <input type="text" name="largura_cm" inputmode="decimal" value="{{ '' if produto.largura_cm is none or produto.largura_cm is undefined else produto.largura_cm }}">
+      </label>
+      <label>Comprimento (cm)
+        <input type="text" name="comprimento_cm" inputmode="decimal" value="{{ '' if produto.comprimento_cm is none or produto.comprimento_cm is undefined else produto.comprimento_cm }}">
+      </label>
+    </div>
+  </fieldset>
+
+  {% if fotos %}
+  <fieldset class="grupo">
+    <legend>Fotos atuais</legend>
+    <div class="fotos-atuais">
+      {% for f in fotos %}
+      <div class="foto-item">
+        <img src="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" alt="">
+        <label class="check"><input type="radio" name="principal" value="{{ f.id }}" {{ 'checked' if loop.first }}><span>Principal</span></label>
+        <label class="check"><input type="checkbox" name="remover_foto" value="{{ f.id }}"><span>Remover</span></label>
+      </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% endif %}
+
+  <label>{{ 'Adicionar fotos' if fotos else 'Fotos' }} (JPG, PNG ou WebP, até {{ max_fotos }} por produto)
+    <input type="file" name="fotos" accept="image/jpeg,image/png,image/webp" multiple>
   </label>
+  <p class="nota">A primeira foto é a principal do catálogo. Se o formulário der erro, escolha as fotos novamente.</p>
 
   <div class="linha">
     <button type="submit">Salvar</button>
-    <a href="{{ url_for('admin.produtos') }}">Cancelar</a>
+    <a href="{{ url_for('admin_produtos.produtos') }}">Cancelar</a>
   </div>
 </form>
+
+<script>
+  function atualizarModalidade() {
+    const marcado = document.querySelector('input[name="modalidade"]:checked');
+    const modalidade = marcado ? marcado.value : "pronta_entrega";
+    document.getElementById("bloco-estoque").hidden = modalidade !== "pronta_entrega";
+    document.getElementById("bloco-tipo").hidden = modalidade !== "personalizavel";
+  }
+  document.querySelectorAll('input[name="modalidade"]').forEach(function (el) {
+    el.addEventListener("change", atualizarModalidade);
+  });
+  atualizarModalidade();
+</script>
 {% endblock %}

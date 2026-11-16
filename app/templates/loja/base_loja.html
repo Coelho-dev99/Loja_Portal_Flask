@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ loja_nome }}{% endblock %}</title>
+  {% if tem_logo %}<link rel="icon" href="{{ url_for('static', filename='logo.png') }}">{% endif %}
+  {% block head %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='loja.css') }}">
+</head>
+<body>
+  <a class="pular" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="topo-loja">
+    <a class="marca" href="{{ url_for('loja.catalogo') }}">
+      {% if tem_logo %}
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="" width="44" height="44">
+      {% endif %}
+      <span>{{ loja_nome }}</span>
+    </a>
+    <a class="link-carrinho" href="{{ url_for('loja.ver_carrinho') }}">
+      Carrinho{% if carrinho_qtd %} <span class="contador">{{ carrinho_qtd }}</span>{% endif %}
+    </a>
+  </header>
+
+  <main id="conteudo" class="miolo">
+    {% with mensagens = get_flashed_messages(with_categories=true) %}
+      {% for categoria, texto in mensagens %}
+        <p class="mensagem {{ categoria }}" role="status">{{ texto }}</p>
+      {% endfor %}
+    {% endwith %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape-loja">
+    <p>Atendimento e pagamento pelo Instagram. Tire suas dúvidas antes de fechar o pedido.</p>
+    <p>
+      <a href="https://ig.me/m/{{ instagram_usuario }}">Chamar no direct</a>
+      <span class="separador" aria-hidden="true"></span>
+      <a href="https://www.instagram.com/{{ instagram_usuario }}/">@{{ instagram_usuario }}</a>
+    </p>
+  </footer>
+</body>
+</html>

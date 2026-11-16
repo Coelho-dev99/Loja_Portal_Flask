@@ -1,0 +1,82 @@
+{% extends "loja/base_loja.html" %}
+{% block titulo %}Carrinho · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<h1>Seu carrinho</h1>
+
+{% if linhas %}
+<div class="carrinho">
+  <ul class="linhas">
+    {% for l in linhas %}
+    <li class="linha-item{{ ' com-problema' if l.problema }}">
+      <span class="moldura moldura-pequena">
+        {% if l.produto and l.produto.foto %}
+        <img src="{{ url_for('static', filename='uploads/produtos/' ~ l.produto.foto) }}" alt="">
+        {% else %}
+        <span class="sem-foto">Sem foto</span>
+        {% endif %}
+      </span>
+
+      <div class="info-item">
+        {% if l.produto and l.produto.ativo %}
+        <a class="nome-item" href="{{ url_for('loja.produto', slug=l.produto.slug) }}">{{ l.produto.nome }}</a>
+        {% else %}
+        <span class="nome-item">{{ l.produto.nome if l.produto else 'Produto removido' }}</span>
+        {% endif %}
+
+        {% if l.item.descricao %}
+        <p class="descricao-item">{{ l.item.descricao }}</p>
+        {% endif %}
+
+        <p class="valor-item">
+          {% if l.subtotal is not none %}
+            R$ {{ l.subtotal|brl }}
+          {% elif l.produto %}
+            Valor a combinar no chat (a partir de R$ {{ l.produto.preco|brl }})
+          {% endif %}
+        </p>
+
+        {% if l.problema %}<p class="problema">{{ l.problema }}</p>{% endif %}
+
+        <div class="acoes-item">
+          <form method="post" action="{{ url_for('loja.carrinho_atualizar', item_id=l.item.id) }}" class="form-quantidade">
+            <label>Quantidade
+              <input type="number" name="quantidade" min="1" max="99" value="{{ l.item.quantidade }}">
+            </label>
+            <button type="submit" class="botao-texto">Atualizar</button>
+          </form>
+          <form method="post" action="{{ url_for('loja.carrinho_remover', item_id=l.item.id) }}">
+            <button type="submit" class="botao-texto">Remover</button>
+          </form>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <aside class="resumo">
+    <h2>Resumo</h2>
+    <dl>
+      <dt>Peças com valor fechado</dt>
+      <dd>R$ {{ subtotal|brl }}</dd>
+      {% if tem_personalizado %}
+      <dt>Peças personalizadas</dt>
+      <dd>valor combinado no chat</dd>
+      {% endif %}
+      <dt>Frete</dt>
+      <dd>confirmado no chat, antes do pagamento</dd>
+    </dl>
+
+    {% if pode_finalizar %}
+    <a class="botao" href="{{ url_for('checkout.finalizar') }}">Finalizar pedido</a>
+    {% else %}
+    <p class="problema">Ajuste os itens com aviso para continuar.</p>
+    {% endif %}
+    <p class="nota">O pagamento não é feito aqui. Depois de finalizar, seguimos a conversa pelo Instagram e enviamos o link de pagamento.</p>
+  </aside>
+</div>
+{% else %}
+<p>Seu carrinho está vazio.</p>
+<p><a class="botao" href="{{ url_for('loja.catalogo') }}">Ver as peças</a></p>
+{% endif %}
+{% endblock %}

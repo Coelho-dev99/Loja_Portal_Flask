@@ -1,9 +1,7 @@
 import hmac
-from decimal import Decimal, InvalidOperation
 
 from flask import (
     Blueprint,
-    abort,
     current_app,
     flash,
     redirect,
@@ -16,6 +14,7 @@ from werkzeug.security import check_password_hash
 
 from app.auth import login_required
 from app.db import get_db
+from app.util import slugify
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -46,7 +45,7 @@ def login():
             # So aceita voltar para caminhos internos do proprio site
             destino = request.args.get("next", "")
             if not destino.startswith("/") or destino.startswith("//"):
-                destino = url_for("admin.produtos")
+                destino = url_for("admin_pedidos.lista")
             return redirect(destino)
 
         flash("Usuário ou senha incorretos.", "erro")
@@ -63,162 +62,11 @@ def logout():
 @bp.route("/")
 @login_required
 def inicio():
-    return redirect(url_for("admin.produtos"))
+    return redirect(url_for("admin_pedidos.lista"))
 
 
 # ---------------------------------------------------------------
-# Produtos (pronta entrega)
-# ---------------------------------------------------------------
-def ler_formulario():
-    """Le e valida os campos do formulario de produto.
-
-    Retorna (dados, erros). Se a lista de erros estiver vazia, os dados
-    estao prontos para ir ao banco.
-    """
-    nome = request.form.get("nome", "").strip()
-    descricao = request.form.get("descricao", "").strip() or None
-    foto_url = request.form.get("foto_url", "").strip() or None
-    erros = []
-
-    if not nome:
-        erros.append("Informe o nome do produto.")
-    elif len(nome) > 120:
-        erros.append("O nome pode ter no máximo 120 caracteres.")
-
-    if foto_url and len(foto_url) > 255:
-        erros.append("O link da foto é longo demais (máximo 255 caracteres).")
-
-    try:
-        preco = Decimal(request.form.get("preco", "").strip().replace(",", "."))
-        if not preco.is_finite() or preco < 0 or preco > Decimal("99999999.99"):
-            raise InvalidOperation
-        preco = preco.quantize(Decimal("0.01"))
-    except InvalidOperation:
-        preco = None
-        erros.append("Preço inválido. Exemplo: 12,50")
-
-    try:
-        estoque = int(request.form.get("estoque", "").strip() or 0)
-        if estoque < 0 or estoque > 1_000_000:
-            raise ValueError
-    except ValueError:
-        estoque = None
-        erros.append("Estoque inválido. Use um número inteiro, 0 ou maior.")
-
-    dados = {
-        "nome": nome,
-        "descricao": descricao,
-        "preco": preco,
-        "foto_url": foto_url,
-        "estoque": estoque,
-    }
-    return dados, erros
-
-
-@bp.route("/produtos")
-@login_required
-def produtos():
-    db = get_db()
-    with db.cursor() as cur:
-        cur.execute(
-            """
-            SELECT id, nome, preco, estoque, ativo
-            FROM produtos
-            ORDER BY ativo DESC, nome
-            """
-        )
-        lista = cur.fetchall()
-    return render_template("admin/produtos.html", produtos=lista)
-
-
-@bp.route("/produtos/novo", methods=["GET", "POST"])
-@login_required
-def produto_novo():
-    produto = {}
-
-    if request.method == "POST":
-        dados, erros = ler_formulario()
-
-        if not erros:
-            db = get_db()
-            with db.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO produtos (nome, descricao, preco, foto_url, estoque)
-                    VALUES (%(nome)s, %(descricao)s, %(preco)s, %(foto_url)s, %(estoque)s)
-                    """,
-                    dados,
-                )
-            db.commit()
-            flash("Produto cadastrado.", "ok")
-            return redirect(url_for("admin.produtos"))
-
-        for erro in erros:
-            flash(erro, "erro")
-        produto = dados
-
-    return render_template(
-        "admin/produto_form.html", produto=produto, titulo="Novo produto"
-    )
-
-
-@bp.route("/produtos/<int:produto_id>/editar", methods=["GET", "POST"])
-@login_required
-def produto_editar(produto_id):
-    db = get_db()
-    with db.cursor() as cur:
-        cur.execute("SELECT * FROM produtos WHERE id = %s", (produto_id,))
-        produto = cur.fetchone()
-
-    if produto is None:
-        abort(404)
-
-    if request.method == "POST":
-        dados, erros = ler_formulario()
-
-        if not erros:
-            dados["id"] = produto_id
-            with db.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE produtos
-                    SET nome = %(nome)s,
-                        descricao = %(descricao)s,
-                        preco = %(preco)s,
-                        foto_url = %(foto_url)s,
-                        estoque = %(estoque)s
-                    WHERE id = %(id)s
-                    """,
-                    dados,
-                )
-            db.commit()
-            flash("Produto atualizado.", "ok")
-            return redirect(url_for("admin.produtos"))
-
-        for erro in erros:
-            flash(erro, "erro")
-        produto = dados
-
-    return render_template(
-        "admin/produto_form.html", produto=produto, titulo="Editar produto"
-    )
-
-
-@bp.route("/produtos/<int:produto_id>/alternar", methods=["POST"])
-@login_required
-def produto_alternar(produto_id):
-    """Oculta ou mostra o produto na vitrine (nao apaga, para manter o historico)."""
-    db = get_db()
-    with db.cursor() as cur:
-        cur.execute(
-            "UPDATE produtos SET ativo = NOT ativo WHERE id = %s", (produto_id,)
-        )
-    db.commit()
-    return redirect(url_for("admin.produtos"))
-
-
-# ---------------------------------------------------------------
-# Tipos de peca personalizada (tapete, quadro, moldura...)
+# Tipos de peca personalizada (usados no relatorio mensal)
 # ---------------------------------------------------------------
 @bp.route("/tipos", methods=["GET", "POST"])
 @login_required
@@ -251,12 +99,70 @@ def tipos():
     with db.cursor() as cur:
         cur.execute(
             """
-            SELECT t.id, t.nome, COUNT(i.id) AS usos
+            SELECT t.id, t.nome,
+                   (SELECT COUNT(*) FROM itens_pedido i
+                    WHERE i.tipo_personalizado_id = t.id) AS usos
             FROM tipos_personalizado t
-            LEFT JOIN itens_pedido i ON i.tipo_personalizado_id = t.id
-            GROUP BY t.id
             ORDER BY t.nome
             """
         )
         lista = cur.fetchall()
     return render_template("admin/tipos.html", tipos=lista)
+
+
+# ---------------------------------------------------------------
+# Categorias do catalogo (Tapetes, Quadros, Porta-copos...)
+# ---------------------------------------------------------------
+@bp.route("/categorias", methods=["GET", "POST"])
+@login_required
+def categorias():
+    db = get_db()
+
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        slug = slugify(nome)
+
+        if not nome or not slug:
+            flash("Informe o nome da categoria.", "erro")
+        elif len(nome) > 60:
+            flash("O nome da categoria pode ter no máximo 60 caracteres.", "erro")
+        else:
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM categorias WHERE slug = %s OR lower(nome) = lower(%s)",
+                    (slug, nome),
+                )
+                if cur.fetchone():
+                    flash("Essa categoria já existe.", "erro")
+                else:
+                    cur.execute(
+                        "INSERT INTO categorias (nome, slug) VALUES (%s, %s)",
+                        (nome, slug),
+                    )
+                    db.commit()
+                    flash("Categoria cadastrada.", "ok")
+        return redirect(url_for("admin.categorias"))
+
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            SELECT c.id, c.nome, COUNT(p.id) AS produtos
+            FROM categorias c
+            LEFT JOIN produtos p ON p.categoria_id = c.id
+            GROUP BY c.id
+            ORDER BY c.nome
+            """
+        )
+        lista = cur.fetchall()
+    return render_template("admin/categorias.html", categorias=lista)
+
+
+@bp.route("/categorias/<int:categoria_id>/excluir", methods=["POST"])
+@login_required
+def categoria_excluir(categoria_id):
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM categorias WHERE id = %s", (categoria_id,))
+    db.commit()
+    flash("Categoria excluída. Os produtos dela ficaram sem categoria.", "ok")
+    return redirect(url_for("admin.categorias"))

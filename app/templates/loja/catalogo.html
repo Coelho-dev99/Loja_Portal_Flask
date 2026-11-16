@@ -1,0 +1,65 @@
+{% extends "loja/base_loja.html" %}
+{% block titulo %}{% if categoria %}{{ categoria.nome }} · {% endif %}{{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<section class="abertura">
+  <h1>{{ categoria.nome if categoria else 'Peças de lã feitas à mão' }}</h1>
+  {% if not categoria %}
+  <p>Arte e design em punch needle. Escolha uma peça pronta ou peça uma personalizada, monte o carrinho e finalize o pedido pelo Instagram.</p>
+  {% endif %}
+</section>
+
+<nav class="filtros" aria-label="Categorias">
+  <a href="{{ url_for('loja.catalogo', modalidade=modalidade or None) }}"
+     {% if not categoria %}aria-current="page"{% endif %}>Tudo</a>
+  {% for c in categorias %}
+  <a href="{{ url_for('loja.catalogo', slug=c.slug, modalidade=modalidade or None) }}"
+     {% if categoria and categoria.slug == c.slug %}aria-current="page"{% endif %}>{{ c.nome }}</a>
+  {% endfor %}
+</nav>
+
+<nav class="filtros filtros-secundarios" aria-label="Tipo de peça">
+  <a href="{{ url_for('loja.catalogo', slug=categoria.slug if categoria else None) }}"
+     {% if not modalidade %}aria-current="page"{% endif %}>Todas as peças</a>
+  <a href="{{ url_for('loja.catalogo', slug=categoria.slug if categoria else None, modalidade='pronta_entrega') }}"
+     {% if modalidade == 'pronta_entrega' %}aria-current="page"{% endif %}>Pronta entrega</a>
+  <a href="{{ url_for('loja.catalogo', slug=categoria.slug if categoria else None, modalidade='personalizavel') }}"
+     {% if modalidade == 'personalizavel' %}aria-current="page"{% endif %}>Personalizadas</a>
+</nav>
+
+<ul class="grade">
+  {% for p in produtos %}
+  <li>
+    <a class="cartao" href="{{ url_for('loja.produto', slug=p.slug) }}">
+      <span class="moldura">
+        {% if p.foto %}
+        <img src="{{ url_for('static', filename='uploads/produtos/' ~ p.foto) }}" alt="" loading="lazy">
+        {% else %}
+        <span class="sem-foto">Sem foto</span>
+        {% endif %}
+        {% if p.modalidade == 'personalizavel' %}
+        <span class="selo selo-personalize">Personalize</span>
+        {% elif p.estoque == 0 %}
+        <span class="selo selo-esgotado">Esgotado</span>
+        {% endif %}
+      </span>
+      <span class="nome">{{ p.nome }}</span>
+      <span class="preco">{% if p.modalidade == 'personalizavel' %}a partir de {% endif %}R$ {{ p.preco|brl }}</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="vazio">Nenhuma peça por aqui ainda. Volte em breve ou chame no Instagram.</li>
+  {% endfor %}
+</ul>
+
+{% if not categoria %}
+<section class="como-funciona">
+  <h2>Como funciona</h2>
+  <ol>
+    <li>Escolha as peças e monte o carrinho. Nas personalizadas, conte o que você imagina.</li>
+    <li>Informe seus dados e o CEP para ver o frete.</li>
+    <li>O pedido chega ao nosso Instagram. Lá tiramos as dúvidas, combinamos os detalhes e enviamos o link de pagamento.</li>
+  </ol>
+</section>
+{% endif %}
+{% endblock %}

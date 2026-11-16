@@ -1,0 +1,78 @@
+{% extends "loja/base_loja.html" %}
+{% block titulo %}{{ produto.nome }} · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+{% if produto.categoria_nome %}
+<p class="migalha"><a href="{{ url_for('loja.catalogo', slug=produto.categoria_slug) }}">{{ produto.categoria_nome }}</a></p>
+{% endif %}
+
+<article class="produto">
+  <div class="galeria">
+    <div class="moldura moldura-grande">
+      {% if fotos %}
+      <img id="foto-grande" src="{{ url_for('static', filename='uploads/produtos/' ~ fotos[0].arquivo) }}" alt="{{ produto.nome }}">
+      {% else %}
+      <span class="sem-foto">Sem foto</span>
+      {% endif %}
+    </div>
+    {% if fotos|length > 1 %}
+    <ul class="miniaturas">
+      {% for f in fotos %}
+      <li>
+        <button type="button" data-foto="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" aria-label="Ver a foto {{ loop.index }}">
+          <img src="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" alt="">
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <div class="detalhes">
+    <h1>{{ produto.nome }}</h1>
+    <p class="preco-grande">{% if produto.modalidade == 'personalizavel' %}a partir de {% endif %}R$ {{ produto.preco|brl }}</p>
+
+    {% if produto.descricao %}
+    <p class="descricao">{{ produto.descricao }}</p>
+    {% endif %}
+
+    {% if produto.modalidade == 'pronta_entrega' %}
+      {% if produto.estoque > 0 %}
+      <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" class="form-compra">
+        <input type="hidden" name="produto_id" value="{{ produto.id }}">
+        <label>Quantidade
+          <input type="number" name="quantidade" min="1" max="{{ produto.estoque }}" value="1" required>
+        </label>
+        {% if produto.estoque <= 3 %}
+        <p class="nota">{{ 'Resta 1 peça.' if produto.estoque == 1 else 'Restam ' ~ produto.estoque ~ ' peças.' }}</p>
+        {% endif %}
+        <button type="submit" class="botao">Adicionar ao carrinho</button>
+      </form>
+      {% else %}
+      <p class="esgotado">Esgotado no momento.</p>
+      <p>Quer uma peça parecida? <a href="https://ig.me/m/{{ instagram_usuario }}">Chame no direct</a> e combinamos.</p>
+      {% endif %}
+    {% else %}
+    <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" class="form-compra">
+      <input type="hidden" name="produto_id" value="{{ produto.id }}">
+      <label>Como você quer a sua peça?
+        <textarea name="descricao" rows="6" maxlength="1000" required placeholder="Conte o tamanho, as cores e o desenho que você imagina. Fotos de referência podem ser enviadas depois, na conversa do Instagram."></textarea>
+      </label>
+      <label>Quantidade
+        <input type="number" name="quantidade" min="1" max="10" value="1" required>
+      </label>
+      <p class="nota">O valor final é combinado no chat, de acordo com o tamanho e a complexidade.</p>
+      <button type="submit" class="botao">Adicionar ao carrinho</button>
+    </form>
+    {% endif %}
+  </div>
+</article>
+
+<script>
+  document.querySelectorAll(".miniaturas button").forEach(function (botao) {
+    botao.addEventListener("click", function () {
+      document.getElementById("foto-grande").src = botao.dataset.foto;
+    });
+  });
+</script>
+{% endblock %}

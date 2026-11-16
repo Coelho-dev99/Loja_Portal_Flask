@@ -1,0 +1,133 @@
+{% extends "loja/base_loja.html" %}
+{% block titulo %}Finalizar pedido · {{ loja_nome }}{% endblock %}
+
+{% block conteudo %}
+<h1>Finalizar pedido</h1>
+
+{% for erro in erros %}
+<p class="mensagem erro" role="alert">{{ erro }}</p>
+{% endfor %}
+
+<div class="finalizar">
+  <form method="post" class="form-pedido">
+    <fieldset>
+      <legend>Seus dados</legend>
+      <label>Nome completo
+        <input type="text" name="nome" maxlength="120" required autocomplete="name" value="{{ valores.get('nome', '') }}">
+      </label>
+      <label>Telefone / WhatsApp (com DDD)
+        <input type="tel" name="telefone" required autocomplete="tel" placeholder="(61) 91234-5678" value="{{ valores.get('telefone', '') }}">
+      </label>
+      <label>@ do Instagram (opcional)
+        <input type="text" name="instagram" maxlength="31" autocapitalize="none" value="{{ valores.get('instagram', '') }}">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Endereço de entrega</legend>
+      <label>CEP
+        <input type="text" id="cep" name="cep" inputmode="numeric" maxlength="9" required autocomplete="postal-code" value="{{ valores.get('cep', '') }}">
+      </label>
+      <label>Rua
+        <input type="text" id="rua" name="rua" maxlength="150" required autocomplete="address-line1" value="{{ valores.get('rua', '') }}">
+      </label>
+      <label>Número
+        <input type="text" name="numero" maxlength="10" required value="{{ valores.get('numero', '') }}">
+      </label>
+
+      <div class="grupo-opcoes" role="radiogroup" aria-labelledby="rotulo-moradia">
+        <span id="rotulo-moradia" class="rotulo">O endereço é</span>
+        <label class="opcao">
+          <input type="radio" name="tipo_moradia" value="casa" {{ 'checked' if valores.get('tipo_moradia', 'casa') != 'apartamento' }}>
+          <span>Casa</span>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="tipo_moradia" value="apartamento" {{ 'checked' if valores.get('tipo_moradia') == 'apartamento' }}>
+          <span>Apartamento</span>
+        </label>
+      </div>
+
+      <label>Complemento <span id="dica-complemento" class="nota">(opcional)</span>
+        <input type="text" id="complemento" name="complemento" maxlength="80" placeholder="Bloco, número do apartamento, referência..." value="{{ valores.get('complemento', '') }}">
+      </label>
+      <label>Bairro
+        <input type="text" id="bairro" name="bairro" maxlength="80" required value="{{ valores.get('bairro', '') }}">
+      </label>
+      <label>Cidade
+        <input type="text" id="cidade" name="cidade" maxlength="80" required value="{{ valores.get('cidade', '') }}">
+      </label>
+      <label>Estado (sigla)
+        <input type="text" id="estado" name="estado" maxlength="2" required placeholder="DF" autocapitalize="characters" value="{{ valores.get('estado', '') }}">
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Frete e pagamento</legend>
+      <p>O frete é calculado com base no seu CEP e confirmado na conversa do Instagram, antes do pagamento. O pagamento também é combinado por lá, com um link enviado para você.</p>
+    </fieldset>
+
+    <label class="opcao consentimento">
+      <input type="checkbox" name="consentimento" required {{ 'checked' if valores.get('consentimento') }}>
+      <span>Autorizo o uso dos meus dados apenas para processar e entregar este pedido.</span>
+    </label>
+
+    <button type="submit" class="botao">Enviar pedido</button>
+  </form>
+
+  <aside class="resumo">
+    <h2>Seu pedido</h2>
+    <ul class="itens-resumo">
+      {% for l in linhas %}
+      <li>
+        <span>{{ l.item.quantidade }}x {{ l.produto.nome }}{% if l.item.descricao %}<small class="descricao-resumo">{{ l.item.descricao }}</small>{% endif %}</span>
+        <span>{% if l.subtotal is not none %}R$ {{ l.subtotal|brl }}{% else %}a combinar{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <dl>
+      <dt>Peças com valor fechado</dt>
+      <dd>R$ {{ subtotal|brl }}</dd>
+      {% if tem_personalizado %}
+      <dt>Peças personalizadas</dt>
+      <dd>valor combinado no chat</dd>
+      {% endif %}
+    </dl>
+    <p><a href="{{ url_for('loja.ver_carrinho') }}">Voltar ao carrinho</a></p>
+  </aside>
+</div>
+
+<script>
+  const campoCep = document.getElementById("cep");
+
+  async function buscarCep() {
+    const digitos = campoCep.value.replace(/\D/g, "");
+    if (digitos.length !== 8) return;
+    try {
+      const resposta = await fetch("https://viacep.com.br/ws/" + digitos + "/json/");
+      const dados = await resposta.json();
+      if (dados.erro) return;
+      document.getElementById("rua").value = dados.logradouro || "";
+      document.getElementById("bairro").value = dados.bairro || "";
+      document.getElementById("cidade").value = dados.localidade || "";
+      document.getElementById("estado").value = dados.uf || "";
+    } catch (e) {
+      /* se falhar, o cliente preenche à mão */
+    }
+  }
+  campoCep.addEventListener("blur", buscarCep);
+  campoCep.addEventListener("input", function () {
+    if (campoCep.value.replace(/\D/g, "").length === 8) buscarCep();
+  });
+
+  function atualizarComplemento() {
+    const apartamento = document.querySelector('input[name="tipo_moradia"]:checked').value === "apartamento";
+    const campo = document.getElementById("complemento");
+    campo.required = apartamento;
+    document.getElementById("dica-complemento").textContent = apartamento ? "(obrigatório em apartamento)" : "(opcional)";
+  }
+  document.querySelectorAll('input[name="tipo_moradia"]').forEach(function (el) {
+    el.addEventListener("change", atualizarComplemento);
+  });
+  atualizarComplemento();
+</script>
+{% endblock %}

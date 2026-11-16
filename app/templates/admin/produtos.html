@@ -3,8 +3,8 @@
 
 {% block conteudo %}
 <div class="linha">
-  <h1>Produtos de pronta entrega</h1>
-  <a class="botao" href="{{ url_for('admin.produto_novo') }}">+ Novo produto</a>
+  <h1>Produtos</h1>
+  <a class="botao" href="{{ url_for('admin_produtos.produto_novo') }}">+ Novo produto</a>
 </div>
 
 {% if produtos %}
@@ -12,7 +12,10 @@
   <table>
     <thead>
       <tr>
+        <th></th>
         <th>Produto</th>
+        <th>Categoria</th>
+        <th>Modalidade</th>
         <th>Preço</th>
         <th>Estoque</th>
         <th>Status</th>
@@ -22,16 +25,26 @@
     <tbody>
     {% for p in produtos %}
       <tr class="{{ '' if p.ativo else 'inativo' }}">
-        <td>{{ p.nome }}</td>
-        <td>R$ {{ ('%.2f'|format(p.preco))|replace('.', ',') }}</td>
         <td>
-          {{ p.estoque }}
-          {% if p.estoque == 0 %}<span class="tag">esgotado</span>{% endif %}
+          {% if p.foto %}
+          <img class="miniatura" src="{{ url_for('static', filename='uploads/produtos/' ~ p.foto) }}" alt="">
+          {% else %}
+          <span class="miniatura vazia"></span>
+          {% endif %}
+        </td>
+        <td>{{ p.nome }}</td>
+        <td>{{ p.categoria or '—' }}</td>
+        <td>{{ 'Pronta entrega' if p.modalidade == 'pronta_entrega' else 'Personalizável' }}</td>
+        <td>{% if p.modalidade == 'personalizavel' %}a partir de {% endif %}R$ {{ p.preco|brl }}</td>
+        <td>
+          {% if p.modalidade == 'pronta_entrega' %}
+            {{ p.estoque }}{% if p.estoque == 0 %} <span class="tag">esgotado</span>{% endif %}
+          {% else %}—{% endif %}
         </td>
         <td>{{ 'Visível' if p.ativo else 'Oculto' }}</td>
         <td class="acoes">
-          <a href="{{ url_for('admin.produto_editar', produto_id=p.id) }}">Editar</a>
-          <form method="post" action="{{ url_for('admin.produto_alternar', produto_id=p.id) }}">
+          <a href="{{ url_for('admin_produtos.produto_editar', produto_id=p.id) }}">Editar</a>
+          <form method="post" action="{{ url_for('admin_produtos.produto_alternar', produto_id=p.id) }}">
             <button type="submit" class="link">{{ 'Ocultar' if p.ativo else 'Mostrar' }}</button>
           </form>
         </td>

@@ -1,20 +1,18 @@
 ROTULOS = {
-    "aguardando_dados": "Aguardando dados",
-    "confirmado": "Confirmado",
+    "aguardando_pagamento": "Aguardando pagamento",
     "pago": "Pago",
+    "processando": "Processando",
     "enviado": "Enviado",
-    "entregue": "Entregue",
+    "concluido": "Concluído",
     "cancelado": "Cancelado",
 }
 
-# Para quais status cada pedido pode ir. O estoque e reservado quando o
-# cliente envia os dados (aguardando_dados -> confirmado) e devolvido se o
-# pedido for cancelado depois disso.
+# Para quais status cada pedido pode ir (voce muda manualmente no painel).
 PROXIMOS = {
-    "aguardando_dados": ["cancelado"],
-    "confirmado": ["pago", "cancelado"],
-    "pago": ["enviado", "cancelado"],
-    "enviado": ["entregue", "cancelado"],
-    "entregue": [],
+    "aguardando_pagamento": ["pago", "cancelado"],
+    "pago": ["processando", "cancelado"],
+    "processando": ["enviado", "cancelado"],
+    "enviado": ["concluido"],
+    "concluido": [],
     "cancelado": [],
 }

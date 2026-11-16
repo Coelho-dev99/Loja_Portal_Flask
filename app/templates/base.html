@@ -10,11 +10,13 @@
 <body>
   {% if session.get('admin') %}
   <header class="topo">
-    <strong>Portal La.B · Painel</strong>
+    <strong>Portal Lãb · Painel</strong>
     <nav>
       <a href="{{ url_for('admin_pedidos.lista') }}">Pedidos</a>
-      <a href="{{ url_for('admin.produtos') }}">Produtos</a>
+      <a href="{{ url_for('admin_produtos.produtos') }}">Produtos</a>
+      <a href="{{ url_for('admin.categorias') }}">Categorias</a>
       <a href="{{ url_for('admin.tipos') }}">Tipos</a>
+      <a href="{{ url_for('loja.catalogo') }}" target="_blank" rel="noopener">Ver loja</a>
     </nav>
     <form method="post" action="{{ url_for('admin.logout') }}">
       <button type="submit" class="link">Sair</button>

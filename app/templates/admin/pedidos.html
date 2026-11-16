@@ -1,33 +1,37 @@
 {% extends "base.html" %}
-{% block titulo %}Pedidos · Portal La.B{% endblock %}
+{% block titulo %}Pedidos · Portal Lãb{% endblock %}
 
 {% block conteudo %}
-<div class="linha">
-  <h1>Pedidos</h1>
-  <a class="botao" href="{{ url_for('admin_pedidos.novo') }}">+ Novo pedido</a>
-</div>
+<h1>Pedidos</h1>
+
+<nav class="filtros-admin" aria-label="Filtrar por status">
+  <a href="{{ url_for('admin_pedidos.lista') }}" {% if not status %}aria-current="page"{% endif %}>Todos ({{ total_geral }})</a>
+  {% for chave, rotulo in rotulos.items() %}
+  <a href="{{ url_for('admin_pedidos.lista', status=chave) }}" {% if status == chave %}aria-current="page"{% endif %}>{{ rotulo }} ({{ contagem.get(chave, 0) }})</a>
+  {% endfor %}
+</nav>
 
 {% if pedidos %}
 <div class="tabela">
   <table>
     <thead>
-      <tr>
-        <th>#</th>
-        <th>Cliente</th>
-        <th>Itens</th>
-        <th>Total</th>
-        <th>Status</th>
-        <th>Criado em</th>
-        <th></th>
-      </tr>
+      <tr><th>Nº</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Criado em</th><th></th></tr>
     </thead>
     <tbody>
     {% for p in pedidos %}
       <tr class="{{ 'inativo' if p.status == 'cancelado' else '' }}">
         <td>{{ p.id }}</td>
-        <td>{{ p.cliente or p.observacoes or '—' }}</td>
+        <td>{{ p.cliente }}</td>
         <td>{{ p.qtd_itens }}</td>
-        <td>R$ {{ p.total|brl }}</td>
+        <td>
+          R$ {{ (p.subtotal + (p.frete_valor or 0))|brl }}
+          {% if p.a_definir or p.frete_valor is none %}
+          <small class="nota">
+            {%- if p.a_definir %} · valor a definir{% endif -%}
+            {%- if p.frete_valor is none %} · frete a confirmar{% endif -%}
+          </small>
+          {% endif %}
+        </td>
         <td><span class="status {{ p.status }}">{{ p.status|rotulo_status }}</span></td>
         <td>{{ p.criado_em|data_br }}</td>
         <td><a href="{{ url_for('admin_pedidos.detalhe', pedido_id=p.id) }}">Abrir</a></td>
@@ -37,6 +41,6 @@
   </table>
 </div>
 {% else %}
-<p>Nenhum pedido ainda. Quando combinar uma venda no Instagram, clique em <strong>Novo pedido</strong>.</p>
+<p>Nenhum pedido {% if status %}com esse status{% else %}ainda{% endif %}. Quando um cliente finalizar o carrinho no site, o pedido aparece aqui.</p>
 {% endif %}
 {% endblock %}

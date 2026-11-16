@@ -1,11 +1,9 @@
-import secrets
-from decimal import Decimal, InvalidOperation
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from app.auth import login_required
 from app.db import get_db
-from app.status import PROXIMOS
+from app.status import PROXIMOS, ROTULOS
+from app.util import ler_decimal, ler_inteiro
 
 bp = Blueprint("admin_pedidos", __name__, url_prefix="/admin/pedidos")
 
@@ -20,101 +18,56 @@ ITENS_SQL = """
 """
 
 
-# ---------------------------------------------------------------
-# Funcoes auxiliares
-# ---------------------------------------------------------------
-def ler_valor(texto):
-    """Converte '12,50' em Decimal. Retorna None se for invalido."""
-    try:
-        valor = Decimal(texto.strip().replace(",", "."))
-    except InvalidOperation:
-        return None
-    if not valor.is_finite() or valor < 0 or valor > Decimal("99999999.99"):
-        return None
-    return valor.quantize(Decimal("0.01"))
-
-
-def ler_quantidade(texto):
-    try:
-        quantidade = int(texto.strip())
-    except ValueError:
-        return None
-    return quantidade if 1 <= quantidade <= 1000 else None
-
-
-def ler_inteiro(texto):
-    try:
-        return int(texto.strip())
-    except ValueError:
-        return None
-
-
 def voltar(pedido_id):
     return redirect(url_for("admin_pedidos.detalhe", pedido_id=pedido_id))
 
 
-def pedido_aberto(cur, pedido_id):
-    """True se o pedido ainda aceita mudancas nos itens (cliente nao enviou os dados)."""
-    cur.execute("SELECT status FROM pedidos WHERE id = %s", (pedido_id,))
-    linha = cur.fetchone()
-    if linha is None:
-        abort(404)
-    return linha["status"] == "aguardando_dados"
-
-
 # ---------------------------------------------------------------
-# Lista e criacao de pedidos
+# Lista
 # ---------------------------------------------------------------
-@bp.route("/")
+@bp.route("")
 @login_required
 def lista():
+    status = request.args.get("status", "")
+    if status not in ROTULOS:
+        status = ""
+
     db = get_db()
     with db.cursor() as cur:
         cur.execute(
             """
-            SELECT pe.id, pe.status, pe.criado_em, pe.observacoes,
+            SELECT pe.id, pe.status, pe.criado_em, pe.frete_valor,
                    c.nome AS cliente,
                    COUNT(i.id) AS qtd_itens,
-                   COALESCE(SUM(i.quantidade * i.valor_unitario), 0) AS total
+                   COUNT(*) FILTER (WHERE i.tipo = 'personalizado'
+                                    AND i.valor_unitario IS NULL) AS a_definir,
+                   COALESCE(SUM(i.quantidade * i.valor_unitario), 0) AS subtotal
             FROM pedidos pe
-            LEFT JOIN clientes c ON c.id = pe.cliente_id
+            JOIN clientes c ON c.id = pe.cliente_id
             LEFT JOIN itens_pedido i ON i.pedido_id = pe.id
+            WHERE (%(status)s = '' OR pe.status = %(status)s)
             GROUP BY pe.id, c.nome
             ORDER BY pe.criado_em DESC, pe.id DESC
-            """
+            """,
+            {"status": status},
         )
         pedidos = cur.fetchall()
-    return render_template("admin/pedidos.html", pedidos=pedidos)
 
+        cur.execute("SELECT status, COUNT(*) AS n FROM pedidos GROUP BY status")
+        contagem = {linha["status"]: linha["n"] for linha in cur.fetchall()}
 
-@bp.route("/novo", methods=["GET", "POST"])
-@login_required
-def novo():
-    if request.method == "POST":
-        referencia = request.form.get("referencia", "").strip()
-
-        if len(referencia) > 200:
-            flash("A referência pode ter no máximo 200 caracteres.", "erro")
-        else:
-            db = get_db()
-            with db.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO pedidos (token, observacoes)
-                    VALUES (%s, %s)
-                    RETURNING id
-                    """,
-                    (secrets.token_urlsafe(32), referencia or None),
-                )
-                pedido_id = cur.fetchone()["id"]
-            db.commit()
-            return voltar(pedido_id)
-
-    return render_template("admin/pedido_novo.html")
+    return render_template(
+        "admin/pedidos.html",
+        pedidos=pedidos,
+        status=status,
+        contagem=contagem,
+        total_geral=sum(contagem.values()),
+        rotulos=ROTULOS,
+    )
 
 
 # ---------------------------------------------------------------
-# Detalhe do pedido
+# Detalhe
 # ---------------------------------------------------------------
 @bp.route("/<int:pedido_id>")
 @login_required
@@ -123,11 +76,12 @@ def detalhe(pedido_id):
     with db.cursor() as cur:
         cur.execute(
             """
-            SELECT pe.*, c.nome AS cliente_nome, c.instagram, c.telefone, c.cpf,
-                   e.cep, e.rua, e.numero, e.complemento, e.bairro, e.cidade, e.estado
+            SELECT pe.*, c.nome AS cliente_nome, c.instagram, c.telefone,
+                   e.cep, e.rua, e.numero, e.tipo_moradia, e.complemento,
+                   e.bairro, e.cidade, e.estado
             FROM pedidos pe
-            LEFT JOIN clientes c ON c.id = pe.cliente_id
-            LEFT JOIN enderecos e ON e.id = pe.endereco_id
+            JOIN clientes c ON c.id = pe.cliente_id
+            JOIN enderecos e ON e.id = pe.endereco_id
             WHERE pe.id = %s
             """,
             (pedido_id,),
@@ -139,156 +93,125 @@ def detalhe(pedido_id):
         cur.execute(ITENS_SQL, (pedido_id,))
         itens = cur.fetchall()
 
-        produtos = []
-        tipos = []
-        if pedido["status"] == "aguardando_dados":
-            cur.execute(
-                """
-                SELECT id, nome, preco, estoque
-                FROM produtos
-                WHERE ativo AND estoque > 0
-                ORDER BY nome
-                """
-            )
-            produtos = cur.fetchall()
-            cur.execute("SELECT id, nome FROM tipos_personalizado ORDER BY nome")
-            tipos = cur.fetchall()
+        cur.execute(
+            """
+            SELECT status, criado_em FROM pedido_status_historico
+            WHERE pedido_id = %s ORDER BY criado_em, id
+            """,
+            (pedido_id,),
+        )
+        historico = cur.fetchall()
 
-    total = sum(i["quantidade"] * i["valor_unitario"] for i in itens)
-    link = url_for("formulario.pedido", token=pedido["token"], _external=True)
+    subtotal = sum(
+        (i["quantidade"] * i["valor_unitario"] for i in itens if i["valor_unitario"] is not None),
+        0,
+    )
+    a_definir = sum(1 for i in itens if i["valor_unitario"] is None)
+    total = subtotal + (pedido["frete_valor"] or 0)
 
     return render_template(
         "admin/pedido_detalhe.html",
         pedido=pedido,
         itens=itens,
+        historico=historico,
+        subtotal=subtotal,
+        a_definir=a_definir,
         total=total,
-        link=link,
-        produtos=produtos,
-        tipos=tipos,
         proximos=PROXIMOS[pedido["status"]],
+        rotulos=ROTULOS,
     )
 
 
 # ---------------------------------------------------------------
-# Itens do pedido (so enquanto o cliente nao enviou os dados)
+# Valor combinado das pecas personalizadas
 # ---------------------------------------------------------------
-@bp.route("/<int:pedido_id>/itens/pronta-entrega", methods=["POST"])
+@bp.route("/<int:pedido_id>/itens/<int:item_id>/valor", methods=["POST"])
 @login_required
-def item_pronta_entrega(pedido_id):
+def item_valor(pedido_id, item_id):
     db = get_db()
+    valor = ler_decimal(request.form.get("valor", ""), 0, 99999999.99)
+    if valor is None:
+        flash("Valor inválido. Exemplo: 280,00", "erro")
+        return voltar(pedido_id)
+
     with db.cursor() as cur:
-        if not pedido_aberto(cur, pedido_id):
-            flash("Este pedido não aceita mais alterações nos itens.", "erro")
-            return voltar(pedido_id)
-
-        produto_id = ler_inteiro(request.form.get("produto_id", ""))
-        quantidade = ler_quantidade(request.form.get("quantidade", ""))
-        if produto_id is None or quantidade is None:
-            flash("Escolha o produto e uma quantidade válida.", "erro")
-            return voltar(pedido_id)
-
-        cur.execute(
-            "SELECT id, preco, estoque FROM produtos WHERE id = %s AND ativo",
-            (produto_id,),
-        )
-        produto = cur.fetchone()
-        if produto is None:
-            flash("Produto não encontrado.", "erro")
+        cur.execute("SELECT status FROM pedidos WHERE id = %s FOR UPDATE", (pedido_id,))
+        pedido = cur.fetchone()
+        if pedido is None:
+            abort(404)
+        if pedido["status"] != "aguardando_pagamento":
+            flash("O valor só pode ser alterado enquanto o pedido aguarda pagamento.", "erro")
             return voltar(pedido_id)
 
         cur.execute(
             """
-            SELECT COALESCE(SUM(quantidade), 0) AS ja
-            FROM itens_pedido
-            WHERE pedido_id = %s AND produto_id = %s
+            UPDATE itens_pedido SET valor_unitario = %s
+            WHERE id = %s AND pedido_id = %s AND tipo = 'personalizado'
+            RETURNING id
             """,
-            (pedido_id, produto_id),
+            (valor, item_id, pedido_id),
         )
-        ja_no_pedido = cur.fetchone()["ja"]
-        if ja_no_pedido + quantidade > produto["estoque"]:
-            flash(
-                f"Estoque insuficiente: há {produto['estoque']} em estoque "
-                f"e {ja_no_pedido} já estão neste pedido.",
-                "erro",
-            )
-            return voltar(pedido_id)
-
-        texto_valor = request.form.get("valor", "").strip()
-        valor = produto["preco"] if not texto_valor else ler_valor(texto_valor)
-        if valor is None:
-            flash("Valor inválido. Exemplo: 12,50", "erro")
-            return voltar(pedido_id)
-
-        cur.execute(
-            """
-            INSERT INTO itens_pedido
-                (pedido_id, tipo, produto_id, quantidade, valor_unitario)
-            VALUES (%s, 'pronta_entrega', %s, %s, %s)
-            """,
-            (pedido_id, produto_id, quantidade, valor),
-        )
-    db.commit()
-    flash("Item adicionado.", "ok")
-    return voltar(pedido_id)
-
-
-@bp.route("/<int:pedido_id>/itens/personalizado", methods=["POST"])
-@login_required
-def item_personalizado(pedido_id):
-    db = get_db()
-    with db.cursor() as cur:
-        if not pedido_aberto(cur, pedido_id):
-            flash("Este pedido não aceita mais alterações nos itens.", "erro")
-            return voltar(pedido_id)
-
-        tipo_id = ler_inteiro(request.form.get("tipo_id", ""))
-        descricao = request.form.get("descricao", "").strip()
-        quantidade = ler_quantidade(request.form.get("quantidade", "1") or "1")
-        valor = ler_valor(request.form.get("valor", ""))
-
-        if not descricao or len(descricao) > 1000:
-            flash("Descreva a peça (até 1000 caracteres).", "erro")
-            return voltar(pedido_id)
-        if quantidade is None:
-            flash("Quantidade inválida.", "erro")
-            return voltar(pedido_id)
-        if valor is None:
-            flash("Informe o valor combinado. Exemplo: 280,00", "erro")
-            return voltar(pedido_id)
-
-        cur.execute("SELECT 1 FROM tipos_personalizado WHERE id = %s", (tipo_id,))
         if cur.fetchone() is None:
-            flash("Escolha o tipo da peça.", "erro")
-            return voltar(pedido_id)
-
-        cur.execute(
-            """
-            INSERT INTO itens_pedido
-                (pedido_id, tipo, tipo_personalizado_id, descricao,
-                 quantidade, valor_unitario)
-            VALUES (%s, 'personalizado', %s, %s, %s, %s)
-            """,
-            (pedido_id, tipo_id, descricao, quantidade, valor),
-        )
+            abort(404)
+        cur.execute("UPDATE pedidos SET atualizado_em = NOW() WHERE id = %s", (pedido_id,))
     db.commit()
-    flash("Peça personalizada adicionada.", "ok")
+    flash("Valor combinado salvo.", "ok")
     return voltar(pedido_id)
 
 
-@bp.route("/<int:pedido_id>/itens/<int:item_id>/remover", methods=["POST"])
+# ---------------------------------------------------------------
+# Frete e rastreio (preenchidos por voce)
+# ---------------------------------------------------------------
+@bp.route("/<int:pedido_id>/frete", methods=["POST"])
 @login_required
-def item_remover(pedido_id, item_id):
+def frete(pedido_id):
+    f = request.form
+    erros = []
+
+    frete_valor = None
+    texto_valor = f.get("frete_valor", "").strip()
+    if texto_valor:
+        frete_valor = ler_decimal(texto_valor, 0, 99999.99)
+        if frete_valor is None:
+            erros.append("Valor do frete inválido. Exemplo: 25,90")
+
+    servico = f.get("frete_servico", "").strip() or None
+    if servico and len(servico) > 60:
+        erros.append("O nome do serviço de frete aceita no máximo 60 caracteres.")
+
+    prazo = None
+    texto_prazo = f.get("frete_prazo_dias", "").strip()
+    if texto_prazo:
+        prazo = ler_inteiro(texto_prazo, 0, 90)
+        if prazo is None:
+            erros.append("Prazo inválido. Informe os dias úteis, de 0 a 90.")
+
+    rastreio = f.get("codigo_rastreio", "").strip() or None
+    if rastreio and len(rastreio) > 40:
+        erros.append("O código de rastreio aceita no máximo 40 caracteres.")
+
+    if erros:
+        for e in erros:
+            flash(e, "erro")
+        return voltar(pedido_id)
+
     db = get_db()
     with db.cursor() as cur:
-        if not pedido_aberto(cur, pedido_id):
-            flash("Este pedido não aceita mais alterações nos itens.", "erro")
-            return voltar(pedido_id)
         cur.execute(
-            "DELETE FROM itens_pedido WHERE id = %s AND pedido_id = %s",
-            (item_id, pedido_id),
+            """
+            UPDATE pedidos
+            SET frete_valor = %s, frete_servico = %s, frete_prazo_dias = %s,
+                codigo_rastreio = %s, atualizado_em = NOW()
+            WHERE id = %s AND status <> 'cancelado'
+            RETURNING id
+            """,
+            (frete_valor, servico, prazo, rastreio, pedido_id),
         )
+        if cur.fetchone() is None:
+            flash("Pedido não encontrado ou já cancelado.", "erro")
+            return voltar(pedido_id)
     db.commit()
-    flash("Item removido.", "ok")
+    flash("Frete e rastreio salvos.", "ok")
     return voltar(pedido_id)
 
 
@@ -302,15 +225,7 @@ def mudar_status(pedido_id):
 
     db = get_db()
     with db.cursor() as cur:
-        cur.execute(
-            """
-            SELECT status, dados_preenchidos_em
-            FROM pedidos
-            WHERE id = %s
-            FOR UPDATE
-            """,
-            (pedido_id,),
-        )
+        cur.execute("SELECT status FROM pedidos WHERE id = %s FOR UPDATE", (pedido_id,))
         pedido = cur.fetchone()
         if pedido is None:
             abort(404)
@@ -319,8 +234,8 @@ def mudar_status(pedido_id):
             flash("Essa mudança de status não é permitida.", "erro")
             return voltar(pedido_id)
 
-        # Pedido cancelado depois de o estoque ter sido reservado: devolve as pecas
-        if novo_status == "cancelado" and pedido["dados_preenchidos_em"] is not None:
+        # Cancelamento devolve ao estoque as pecas de pronta entrega
+        if novo_status == "cancelado":
             cur.execute(
                 """
                 UPDATE produtos p
@@ -337,7 +252,12 @@ def mudar_status(pedido_id):
             )
 
         cur.execute(
-            "UPDATE pedidos SET status = %s WHERE id = %s", (novo_status, pedido_id)
+            "UPDATE pedidos SET status = %s, atualizado_em = NOW() WHERE id = %s",
+            (novo_status, pedido_id),
+        )
+        cur.execute(
+            "INSERT INTO pedido_status_historico (pedido_id, status) VALUES (%s, %s)",
+            (pedido_id, novo_status),
         )
     db.commit()
     flash("Status atualizado.", "ok")

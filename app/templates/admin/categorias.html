@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Categorias · Portal La.B{% endblock %}
+
+{% block conteudo %}
+<h1>Categorias</h1>
+<p class="nota">Organizam o catálogo do site, como as coleções de uma loja. Exemplo: Tapetes, Quadros, Porta-copos.</p>
+
+{% if categorias %}
+<div class="tabela">
+  <table>
+    <thead><tr><th>Categoria</th><th>Produtos</th><th></th></tr></thead>
+    <tbody>
+    {% for c in categorias %}
+      <tr>
+        <td>{{ c.nome }}</td>
+        <td>{{ c.produtos }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.categoria_excluir', categoria_id=c.id) }}"
+                onsubmit="return confirm('Excluir esta categoria? Os produtos dela ficam sem categoria.');">
+            <button type="submit" class="link">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>Nenhuma categoria ainda.</p>
+{% endif %}
+
+<section class="caixa">
+  <h2>Nova categoria</h2>
+  <form method="post" class="form">
+    <label>Nome
+      <input type="text" name="nome" maxlength="60" required placeholder="Ex.: Tapetes">
+    </label>
+    <button type="submit">Adicionar categoria</button>
+  </form>
+</section>
+{% endblock %}

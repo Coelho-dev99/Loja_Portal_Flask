@@ -133,3 +133,60 @@ tfoot td { font-weight: 600; }
   align-items: flex-start;
   font-weight: 400;
 }
+
+/* ---- Produtos e fotos ---- */
+.miniatura {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--borda);
+}
+
+fieldset.grupo {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+fieldset.grupo legend { font-weight: 600; padding: 0 0.3rem; }
+
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+
+.fotos-atuais { display: flex; flex-wrap: wrap; gap: 1rem; }
+.foto-item { display: grid; gap: 0.3rem; width: 120px; }
+.foto-item img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; }
+.foto-item .check { font-size: 0.85rem; }
+
+[hidden] { display: none !important; }
+
+/* ---- Pedidos (novos status) ---- */
+.status.aguardando_pagamento { background: #fdf0cf; }
+.status.processando { background: #dcebf7; }
+.status.concluido { background: #cfe8d5; }
+
+.filtros-admin { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+.filtros-admin a {
+  padding: 0.25rem 0.8rem;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.filtros-admin a[aria-current="page"] { background: var(--destaque); border-color: var(--destaque); color: #fff; }
+
+.form-valor { display: flex; gap: 0.4rem; margin: 0; }
+.form-valor input { width: 8rem; }
+.descricao-admin {
+  margin-top: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  background: #faf7f2;
+  border-left: 3px solid var(--destaque);
+  white-space: pre-line;
+  font-size: 0.92rem;
+}
+.historico { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
