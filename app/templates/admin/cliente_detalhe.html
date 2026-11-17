@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block titulo %}{{ cliente.nome }} · Portal Lãb{% endblock %}
+
+{% block conteudo %}
+<h1>{{ cliente.nome }}</h1>
+{% if totais.pedidos > 1 %}<p><span class="status pago">Cliente recorrente</span> {{ totais.pedidos }} pedidos vendidos</p>{% endif %}
+
+<section class="caixa">
+  <h2>Contato</h2>
+  <dl>
+    <dt>Telefone</dt><dd>{{ cliente.telefone|fone }}</dd>
+    {% if cliente.instagram %}
+    <dt>Instagram</dt>
+    <dd><a href="https://www.instagram.com/{{ cliente.instagram }}/" target="_blank" rel="noopener">@{{ cliente.instagram }}</a></dd>
+    {% endif %}
+    <dt>Cadastrado em</dt><dd>{{ cliente.criado_em|data_br }}</dd>
+  </dl>
+</section>
+
+<section class="caixa">
+  <h2>Resumo de compras</h2>
+  {% if totais.pedidos %}
+  <dl>
+    <dt>Pedidos vendidos</dt><dd>{{ totais.pedidos }}</dd>
+    <dt>Total gasto</dt><dd>R$ {{ totais.total|brl }} <small class="nota">(peças + frete)</small></dd>
+    <dt>Primeira compra</dt><dd>{{ totais.primeira|dia_br }}</dd>
+    <dt>Última compra</dt><dd>{{ totais.ultima|dia_br }}</dd>
+  </dl>
+  {% else %}
+  <p class="nota">Ainda não há pedidos pagos deste cliente.</p>
+  {% endif %}
+</section>
+
+<h2>O que já comprou</h2>
+<div class="duas-colunas">
+  <div>
+    <h3>Pronta entrega</h3>
+    {% if pronta_entrega %}
+    <div class="tabela">
+      <table>
+        <thead><tr><th>Produto</th><th>Qtd</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for p in pronta_entrega %}<tr><td>{{ p.nome }}</td><td>{{ p.qtd }}</td><td>R$ {{ p.total|brl }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p class="nota">Nenhuma peça de pronta entrega.</p>{% endif %}
+  </div>
+  <div>
+    <h3>Personalizados</h3>
+    {% if personalizados %}
+    <div class="tabela">
+      <table>
+        <thead><tr><th>Tipo</th><th>Qtd</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for t in personalizados %}<tr><td>{{ t.nome }}</td><td>{{ t.qtd }}</td><td>R$ {{ t.total|brl }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p class="nota">Nenhuma peça personalizada.</p>{% endif %}
+  </div>
+</div>
+
+<h2>Pedidos</h2>
+<div class="tabela">
+  <table>
+    <thead><tr><th>Nº</th><th>Data</th><th>Status</th><th>Peças</th><th>Frete</th></tr></thead>
+    <tbody>
+    {% for p in pedidos %}
+      <tr class="{{ 'inativo' if p.status == 'cancelado' else '' }}">
+        <td><a href="{{ url_for('admin_pedidos.detalhe', pedido_id=p.id) }}">{{ p.id }}</a></td>
+        <td>{{ p.criado_em|data_br }}</td>
+        <td><span class="status {{ p.status }}">{{ p.status|rotulo_status }}</span></td>
+        <td>R$ {{ p.valor_pecas|brl }}{% if p.sem_valor %} <small class="nota">· valor a definir</small>{% endif %}</td>
+        <td>{% if p.frete_valor is not none %}R$ {{ p.frete_valor|brl }}{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<section class="caixa">
+  <h2>Endereços usados</h2>
+  {% for e in enderecos %}
+  <p>
+    {{ e.rua }}, {{ e.numero }} · {{ 'Apartamento' if e.tipo_moradia == 'apartamento' else 'Casa' }}{% if e.complemento %} · {{ e.complemento }}{% endif %}<br>
+    {{ e.bairro }} · {{ e.cidade }}/{{ e.estado }} · CEP {{ e.cep|cep }}
+  </p>
+  {% endfor %}
+</section>
+
+<p><a href="{{ url_for('admin_clientes.lista') }}">← Voltar para os clientes</a></p>
+{% endblock %}

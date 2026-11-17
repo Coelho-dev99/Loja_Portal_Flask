@@ -11,7 +11,7 @@
 <section class="caixa">
   <h2>Cliente e entrega</h2>
   <dl>
-    <dt>Nome</dt><dd>{{ pedido.cliente_nome }}</dd>
+    <dt>Nome</dt><dd><a href="{{ url_for('admin_clientes.detalhe', cliente_id=pedido.cliente_id) }}">{{ pedido.cliente_nome }}</a></dd>
     <dt>Telefone</dt><dd>{{ pedido.telefone|fone }}</dd>
     {% if pedido.instagram %}
     <dt>Instagram</dt>

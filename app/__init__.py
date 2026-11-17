@@ -58,6 +58,10 @@ def create_app():
     def data_br(valor):
         return valor.strftime("%d/%m/%Y %H:%M") if valor else ""
 
+    @app.template_filter("dia_br")
+    def dia_br(valor):
+        return valor.strftime("%d/%m/%Y") if valor else ""
+
     @app.template_filter("rotulo_status")
     def rotulo_status(status):
         return ROTULOS.get(status, status)
@@ -86,6 +90,8 @@ def create_app():
     from app.routes.admin_pedidos import bp as admin_pedidos_bp
     from app.routes.checkout import bp as checkout_bp
     from app.routes.acompanhar import bp as acompanhar_bp
+    from app.routes.admin_relatorios import bp as admin_relatorios_bp
+    from app.routes.admin_clientes import bp as admin_clientes_bp
     from app.routes.admin_melhor_envio import bp as admin_melhor_envio_bp
 
     app.register_blueprint(public_bp)
@@ -95,6 +101,8 @@ def create_app():
     app.register_blueprint(admin_pedidos_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(acompanhar_bp)
+    app.register_blueprint(admin_relatorios_bp)
+    app.register_blueprint(admin_clientes_bp)
     app.register_blueprint(admin_melhor_envio_bp)
 
     return app

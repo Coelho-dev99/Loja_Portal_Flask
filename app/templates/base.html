@@ -13,9 +13,11 @@
     <strong>Portal Lãb · Painel</strong>
     <nav>
       <a href="{{ url_for('admin_pedidos.lista') }}">Pedidos</a>
+      <a href="{{ url_for('admin_clientes.lista') }}">Clientes</a>
       <a href="{{ url_for('admin_produtos.produtos') }}">Produtos</a>
       <a href="{{ url_for('admin.categorias') }}">Categorias</a>
       <a href="{{ url_for('admin.tipos') }}">Tipos</a>
+      <a href="{{ url_for('admin_relatorios.mensal') }}">Relatórios</a>
       <a href="{{ url_for('admin_melhor_envio.painel') }}">Frete</a>
       <a href="{{ url_for('loja.catalogo') }}" target="_blank" rel="noopener">Ver loja</a>
     </nav>

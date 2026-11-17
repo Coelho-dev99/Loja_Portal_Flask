@@ -190,3 +190,30 @@ fieldset.grupo legend { font-weight: 600; padding: 0 0.3rem; }
   font-size: 0.92rem;
 }
 .historico { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+
+/* ---- Relatorios e clientes ---- */
+.topo { flex-wrap: wrap; }
+.topo nav { flex-wrap: wrap; }
+
+.mes-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin: 0.5rem 0 1rem; }
+.mes-nav strong { font-size: 1.15rem; }
+
+.cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; margin: 1rem 0; }
+.cartao-numero {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem 1rem;
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+}
+.cartao-numero span { color: #6b6b6b; font-size: 0.88rem; }
+.cartao-numero strong { font-size: 1.3rem; }
+.cartao-numero.destaque { border-color: var(--destaque); border-width: 2px; }
+
+.duas-colunas { display: grid; gap: 1.5rem; }
+@media (min-width: 800px) { .duas-colunas { grid-template-columns: 1fr 1fr; } }
+
+.form-busca { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin: 1rem 0; }
+.form-busca label { display: grid; gap: 0.3rem; font-weight: 600; }
+.form-busca input { min-width: 16rem; }

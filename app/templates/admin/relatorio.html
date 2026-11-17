@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block titulo %}Relatório de {{ mes.rotulo }} · Portal Lãb{% endblock %}
+
+{% block conteudo %}
+<div class="linha">
+  <h1>Relatório mensal</h1>
+  <a class="botao" href="{{ url_for('admin_relatorios.exportar', mes=mes.texto) }}">Exportar para Excel</a>
+</div>
+
+<nav class="mes-nav" aria-label="Escolher o mês">
+  <a href="{{ url_for('admin_relatorios.mensal', mes=mes.anterior_texto) }}">← {{ mes.anterior_rotulo }}</a>
+  <strong>{{ mes.rotulo|capitalize }}</strong>
+  {% if mes.proximo_texto %}
+  <a href="{{ url_for('admin_relatorios.mensal', mes=mes.proximo_texto) }}">{{ mes.proximo_rotulo }} →</a>
+  {% else %}
+  <span class="nota">mês atual</span>
+  {% endif %}
+</nav>
+
+<p class="nota">Conta como venda o pedido pago (ou já em andamento, enviado ou concluído), no mês em que foi marcado como <strong>Pago</strong>. Pedidos cancelados e aguardando pagamento ficam de fora.</p>
+
+<div class="cartoes">
+  <div class="cartao-numero"><span>Pedidos vendidos</span><strong>{{ resumo.pedidos }}</strong></div>
+  <div class="cartao-numero"><span>Peças vendidas</span><strong>{{ resumo.pecas }}</strong></div>
+  <div class="cartao-numero"><span>Faturamento das peças</span><strong>R$ {{ resumo.faturamento|brl }}</strong></div>
+  <div class="cartao-numero"><span>Frete cobrado</span><strong>R$ {{ resumo.frete|brl }}</strong></div>
+  <div class="cartao-numero destaque"><span>Total (peças + frete)</span><strong>R$ {{ resumo.total|brl }}</strong></div>
+</div>
+
+{% if resumo.sem_valor %}
+<p class="aviso erro">{{ resumo.sem_valor }} peça(s) personalizada(s) vendida(s) neste mês estão <strong>sem valor definido</strong> e não entram no faturamento. Abra o pedido e preencha o valor combinado.</p>
+{% endif %}
+
+<p class="nota">
+  {{ resumo.aguardando }} pedido(s) aguardando pagamento agora ·
+  {{ resumo.cancelados }} pedido(s) cancelado(s) criado(s) neste mês
+</p>
+
+<h2>Pronta entrega por produto</h2>
+{% if produtos %}
+<div class="tabela">
+  <table>
+    <thead><tr><th>Produto</th><th>Quantidade</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for p in produtos %}
+      <tr><td>{{ p.nome }}</td><td>{{ p.qtd }}</td><td>R$ {{ p.total|brl }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="nota">Nenhuma peça de pronta entrega vendida neste mês.</p>
+{% endif %}
+
+<h2>Personalizados por tipo</h2>
+{% if tipos %}
+<div class="tabela">
+  <table>
+    <thead><tr><th>Tipo</th><th>Peças</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for t in tipos %}
+      <tr>
+        <td>{{ t.nome }}</td>
+        <td>{{ t.qtd }}</td>
+        <td>R$ {{ t.total|brl }}{% if t.sem_valor %} <small class="nota">· {{ t.sem_valor }} sem valor</small>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h3>Detalhe das peças personalizadas</h3>
+<div class="tabela">
+  <table>
+    <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Tipo</th><th>Descrição</th><th>Valor</th></tr></thead>
+    <tbody>
+    {% for i in personalizados %}
+      <tr>
+        <td><a href="{{ url_for('admin_pedidos.detalhe', pedido_id=i.pedido) }}">{{ i.pedido }}</a></td>
+        <td>{{ i.data_venda|dia_br }}</td>
+        <td>{{ i.cliente }}</td>
+        <td>{{ i.tipo }}</td>
+        <td>{{ i.descricao|truncate(80) }}</td>
+        <td>{% if i.valor_unitario is not none %}{{ i.quantidade }} × R$ {{ i.valor_unitario|brl }}{% else %}a combinar{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="nota">Nenhuma peça personalizada vendida neste mês.</p>
+{% endif %}
+
+<h2>Clientes</h2>
+<p>
+  <strong>{{ clientes_mes.novos }}</strong> cliente(s) novo(s) no mês ·
+  <strong>{{ clientes_mes.recorrentes }}</strong> cliente(s) que já tinham comprado antes.
+</p>
+
+<h3>Clientes que compraram mais de uma vez</h3>
+{% if recorrentes %}
+<div class="tabela">
+  <table>
+    <thead><tr><th>Cliente</th><th>Pedidos</th><th>Total gasto</th><th>Primeira compra</th><th>Última compra</th></tr></thead>
+    <tbody>
+    {% for c in recorrentes %}
+      <tr>
+        <td><a href="{{ url_for('admin_clientes.detalhe', cliente_id=c.id) }}">{{ c.nome }}</a></td>
+        <td>{{ c.pedidos }}</td>
+        <td>R$ {{ c.total|brl }}</td>
+        <td>{{ c.primeira|dia_br }}</td>
+        <td>{{ c.ultima|dia_br }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="nota">Ainda não há clientes com mais de um pedido vendido.</p>
+{% endif %}
+
+<h2>Pedidos do mês</h2>
+{% if pedidos %}
+<div class="tabela">
+  <table>
+    <thead><tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Status</th><th>Peças</th><th>Valor das peças</th><th>Frete</th></tr></thead>
+    <tbody>
+    {% for p in pedidos %}
+      <tr>
+        <td><a href="{{ url_for('admin_pedidos.detalhe', pedido_id=p.id) }}">{{ p.id }}</a></td>
+        <td>{{ p.data_venda|dia_br }}</td>
+        <td>{{ p.cliente }}</td>
+        <td><span class="status {{ p.status }}">{{ p.status|rotulo_status }}</span></td>
+        <td>{{ p.pecas }}</td>
+        <td>R$ {{ p.valor_pecas|brl }}{% if p.sem_valor %} <small class="nota">· valor a definir</small>{% endif %}</td>
+        <td>{% if p.frete_valor is not none %}R$ {{ p.frete_valor|brl }}{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="nota">Nenhum pedido vendido neste mês.</p>
+{% endif %}
+{% endblock %}
