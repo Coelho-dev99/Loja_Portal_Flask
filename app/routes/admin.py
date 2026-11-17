@@ -12,11 +12,16 @@ from flask import (
 )
 from werkzeug.security import check_password_hash
 
+from app import limitador
 from app.auth import login_required
 from app.db import get_db
-from app.util import slugify
+from app.util import ip_cliente, slugify
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+# Tentativas de login ERRADAS permitidas por IP, dentro da janela
+LOGIN_MAX_FALHAS = 5
+LOGIN_JANELA_SEGUNDOS = 15 * 60
 
 
 # ---------------------------------------------------------------
@@ -25,6 +30,11 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        chave_falhas = f"login-falhas:{ip_cliente()}"
+        if limitador.bloqueado(chave_falhas, LOGIN_MAX_FALHAS, LOGIN_JANELA_SEGUNDOS):
+            flash("Muitas tentativas erradas. Aguarde 15 minutos e tente de novo.", "erro")
+            return render_template("admin/login.html"), 429
+
         usuario = request.form.get("usuario", "").strip()
         senha = request.form.get("senha", "")
 
@@ -39,6 +49,7 @@ def login():
             senha_ok = False
 
         if usuario_ok and senha_ok:
+            limitador.esquecer(chave_falhas)
             session.clear()
             session["admin"] = True
 
@@ -48,6 +59,7 @@ def login():
                 destino = url_for("admin_pedidos.lista")
             return redirect(destino)
 
+        limitador.registrar(chave_falhas)
         flash("Usuário ou senha incorretos.", "erro")
 
     return render_template("admin/login.html")

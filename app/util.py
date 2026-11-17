@@ -1,6 +1,27 @@
+import ipaddress
 import re
 import unicodedata
 from decimal import Decimal, InvalidOperation
+
+from flask import current_app, request
+
+
+def ip_cliente():
+    """IP do visitante, para os limites de tentativas.
+
+    Atras da Cloudflare (PROXY_MODO=cloudflare) o IP real vem no cabecalho
+    CF-Connecting-IP. Sem isso, todos os visitantes pareceriam ter o IP do
+    proxy e dividiriam o mesmo limite. O cabecalho so e confiavel quando o
+    site SO e acessivel pela Cloudflare; por isso a opcao e ligada no .env.
+    No modo "proxy", o ProxyFix (em create_app) ja acerta o request.remote_addr.
+    """
+    if current_app.config.get("PROXY_MODO") == "cloudflare":
+        valor = request.headers.get("CF-Connecting-IP", "").strip()
+        try:
+            return str(ipaddress.ip_address(valor))
+        except ValueError:
+            pass  # cabecalho ausente ou invalido: cai no IP da conexao
+    return request.remote_addr or "desconhecido"
 
 
 def slugify(texto):

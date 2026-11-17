@@ -10,6 +10,7 @@
 
 <div class="finalizar">
   <form method="post" class="form-pedido">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <fieldset>
       <legend>Seus dados</legend>
       <label>Nome completo

@@ -22,6 +22,7 @@
       <a href="{{ url_for('loja.catalogo') }}" target="_blank" rel="noopener">Ver loja</a>
     </nav>
     <form method="post" action="{{ url_for('admin.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="link">Sair</button>
     </form>
   </header>

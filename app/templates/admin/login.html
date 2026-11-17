@@ -4,6 +4,7 @@
 {% block conteudo %}
 <h1>Entrar</h1>
 <form method="post" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label>Usuário
     <input type="text" name="usuario" required autofocus autocomplete="username">
   </label>

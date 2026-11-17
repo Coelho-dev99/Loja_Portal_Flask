@@ -11,6 +11,7 @@
 {% endif %}
 
 <form method="post" class="form-pedido form-acompanhar">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label>Número do pedido
     <input type="text" name="pedido" inputmode="numeric" required autocomplete="off" value="{{ numero }}">
   </label>

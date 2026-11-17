@@ -4,9 +4,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Modo de desenvolvimento: so liga se voce definir FLASK_DEBUG=1 no seu .env LOCAL.
+# Nunca defina isto no servidor (o depurador do Flask permite executar codigo).
+MODO_DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
+
+
+def _chave_secreta():
+    """Exige uma SECRET_KEY forte. Sem ela o site nao inicia.
+
+    Com a chave a mostra (ou fraca), qualquer pessoa conseguiria forjar um
+    login de administrador. Por isso nao existe valor padrao.
+    """
+    chave = os.getenv("SECRET_KEY", "").strip()
+    fraca = (
+        len(chave) < 32
+        or "troque" in chave.lower()
+        or chave.lower().startswith("dev-")
+    )
+    if fraca:
+        raise RuntimeError(
+            "SECRET_KEY ausente ou fraca. Gere uma chave e coloque no .env:\n"
+            '  python -c "import secrets; print(secrets.token_hex(32))"\n'
+            "e copie o resultado para a linha SECRET_KEY=... do arquivo .env "
+            "(minimo de 32 caracteres, sem a frase de exemplo)."
+        )
+    return chave
+
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-troque-isto")
+    SECRET_KEY = _chave_secreta()
 
     # Banco de dados
     DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -29,8 +55,23 @@ class Config:
     # Loja
     INSTAGRAM_USUARIO = os.getenv("INSTAGRAM_USUARIO", "portal_la.b")
 
-    # Em producao (site com HTTPS), defina COOKIES_SEGUROS=1 no .env
-    SESSION_COOKIE_SECURE = os.getenv("COOKIES_SEGUROS", "0") == "1"
+    # Cookies so trafegam por HTTPS. O padrao e SEGURO (1); so o modo de
+    # desenvolvimento (FLASK_DEBUG=1, http://localhost) usa 0 por padrao.
+    # No servidor nao defina COOKIES_SEGUROS=0.
+    SESSION_COOKIE_SECURE = (
+        os.getenv("COOKIES_SEGUROS", "0" if MODO_DEBUG else "1") == "1"
+    )
+
+    # O CSRF vale enquanto a sessao do visitante valer (formulario aberto por
+    # muito tempo, como o de finalizar pedido, nao pode expirar).
+    WTF_CSRF_TIME_LIMIT = None
+
+    # Como o site enxerga o IP real do visitante (usado nos limites de tentativas):
+    #   "nenhum"     -> acesso direto, sem proxy na frente (padrao)
+    #   "proxy"      -> um proxy confiavel na frente (nginx, Render, Railway...) via X-Forwarded-For
+    #   "cloudflare" -> atras da Cloudflare (proxy laranja ou Tunnel), via CF-Connecting-IP
+    # So use "proxy" ou "cloudflare" se o site NAO puder ser acessado sem passar por eles.
+    PROXY_MODO = os.getenv("PROXY_MODO", "nenhum").strip().lower()
 
     # Frete automatico (Melhor Envio)
     MELHOR_ENVIO_CLIENT_ID = os.getenv("MELHOR_ENVIO_CLIENT_ID", "").strip()

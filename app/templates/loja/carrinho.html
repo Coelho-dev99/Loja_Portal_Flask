@@ -40,12 +40,14 @@
 
         <div class="acoes-item">
           <form method="post" action="{{ url_for('loja.carrinho_atualizar', item_id=l.item.id) }}" class="form-quantidade">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label>Quantidade
               <input type="number" name="quantidade" min="1" max="99" value="{{ l.item.quantidade }}">
             </label>
             <button type="submit" class="botao-texto">Atualizar</button>
           </form>
           <form method="post" action="{{ url_for('loja.carrinho_remover', item_id=l.item.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="botao-texto">Remover</button>
           </form>
         </div>

@@ -39,6 +39,7 @@
     {% if produto.modalidade == 'pronta_entrega' %}
       {% if produto.estoque > 0 %}
       <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" class="form-compra">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="produto_id" value="{{ produto.id }}">
         <label>Quantidade
           <input type="number" name="quantidade" min="1" max="{{ produto.estoque }}" value="1" required>
@@ -54,6 +55,7 @@
       {% endif %}
     {% else %}
     <form method="post" action="{{ url_for('loja.carrinho_adicionar') }}" class="form-compra">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="produto_id" value="{{ produto.id }}">
       <label>Como você quer a sua peça?
         <textarea name="descricao" rows="6" maxlength="1000" required placeholder="Conte o tamanho, as cores e o desenho que você imagina. Fotos de referência podem ser enviadas depois, na conversa do Instagram."></textarea>

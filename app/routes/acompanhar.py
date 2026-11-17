@@ -11,7 +11,7 @@ from flask import Blueprint, redirect, render_template, request, session, url_fo
 from app import limitador
 from app.db import get_db
 from app.status import ROTULOS
-from app.util import ler_inteiro, normalizar_telefone
+from app.util import ip_cliente, ler_inteiro, normalizar_telefone
 
 bp = Blueprint("acompanhar", __name__)
 
@@ -60,7 +60,7 @@ def formulario():
             erro = "Informe o número do pedido e o telefone com DDD."
             status_http = 400
         elif not limitador.permitir(
-            f"acompanhar-ip:{request.remote_addr}", 10, 600
+            f"acompanhar-ip:{ip_cliente()}", 10, 600
         ) or not limitador.permitir(f"acompanhar-tel:{telefone}", 10, 1800):
             erro = MUITAS_TENTATIVAS
             status_http = 429

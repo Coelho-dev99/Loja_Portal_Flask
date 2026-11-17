@@ -1,6 +1,9 @@
 Flask
+Flask-WTF
 psycopg2-binary
 python-dotenv
 openpyxl
 Pillow
 requests
+waitress
+gunicorn; sys_platform != "win32"

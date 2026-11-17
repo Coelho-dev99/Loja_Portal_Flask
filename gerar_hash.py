@@ -7,8 +7,8 @@ confirmacao = getpass("Repita a senha: ")
 
 if senha != confirmacao:
     print("As senhas nao conferem. Rode de novo.")
-elif len(senha) < 8:
-    print("Use pelo menos 8 caracteres. Rode de novo.")
+elif len(senha) < 12:
+    print("Use pelo menos 12 caracteres. Rode de novo.")
 else:
     print("\nCopie a linha abaixo para o seu .env:\n")
     print(f"ADMIN_SENHA_HASH='{generate_password_hash(senha)}'")

@@ -1,16 +1,47 @@
 import os
 
 from flask import Flask, g
+from flask_wtf.csrf import CSRFError, CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from app import carrinho
 from app.db import close_db
 from app.status import ROTULOS
 
+MODOS_PROXY = {"nenhum", "proxy", "cloudflare"}
+
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # ---- Proxy na frente do site (Cloudflare, nginx, Render...) ----
+    modo_proxy = app.config["PROXY_MODO"]
+    if modo_proxy not in MODOS_PROXY:
+        raise RuntimeError(
+            f'PROXY_MODO invalido: "{modo_proxy}". Use: nenhum, proxy ou cloudflare.'
+        )
+    if modo_proxy != "nenhum":
+        # Confia em UM proxy: acerta o IP (remote_addr) e o https nos links gerados.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
+    if not app.debug and not app.config["SESSION_COOKIE_SECURE"]:
+        app.logger.warning(
+            "ATENCAO: COOKIES_SEGUROS=0. Os cookies de login e do carrinho podem "
+            "trafegar sem HTTPS. Use isso so no seu computador (FLASK_DEBUG=1)."
+        )
+
+    # ---- Protecao CSRF: todo formulario POST precisa do token da sessao ----
+    CSRFProtect(app)
+
+    @app.errorhandler(CSRFError)
+    def csrf_invalido(e):
+        return (
+            "O formulário expirou ou não é válido. "
+            "Volte à página anterior, recarregue e tente de novo.",
+            400,
+        )
 
     # Fecha a conexao com o banco ao final de cada requisicao
     app.teardown_appcontext(close_db)

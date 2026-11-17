@@ -26,11 +26,13 @@
   <p><span class="status pago">Conectado</span> O acesso é renovado automaticamente. Validade atual até {{ expira_em|data_br }} (UTC).</p>
   <form method="post" action="{{ url_for('admin_melhor_envio.desconectar') }}"
         onsubmit="return confirm('Remover a conexão com o Melhor Envio? O frete volta a ser confirmado manualmente.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit">Desconectar</button>
   </form>
   {% else %}
   <p><span class="status aguardando_pagamento">Não conectado</span> Sem a conexão, o frete fica "a confirmar" nos pedidos.</p>
   <form method="post" action="{{ url_for('admin_melhor_envio.conectar') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" {{ 'disabled' if faltando }}>Conectar ao Melhor Envio</button>
   </form>
   <p class="nota">Você será levada ao Melhor Envio para autorizar. Depois da autorização, o navegador abre o endereço de retorno que você cadastrou no aplicativo.</p>
@@ -38,6 +40,7 @@
   <h3>Já autorizou no Melhor Envio?</h3>
   <p>Se a página que abriu depois da autorização mostrou um erro ou uma tela sem relação com a loja, tudo bem. Copie o <strong>endereço completo da barra do navegador</strong> (ele tem <code>?code=</code> no meio), volte aqui e cole abaixo. Faça isso logo: o código vale por pouco tempo.</p>
   <form method="post" action="{{ url_for('admin_melhor_envio.colar') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Endereço da página de retorno
       <input type="text" name="endereco" required autocomplete="off" placeholder="https://.../callback?code=...&state=...">
     </label>
@@ -50,6 +53,7 @@
 <section class="caixa">
   <h2>3. Testar cotação</h2>
   <form method="post" action="{{ url_for('admin_melhor_envio.testar') }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>CEP de destino
       <input type="text" name="cep" inputmode="numeric" maxlength="9" required placeholder="01018-020">
     </label>

@@ -54,6 +54,7 @@
         <td>
           {% if i.tipo == 'personalizado' and pedido.status == 'aguardando_pagamento' %}
           <form method="post" action="{{ url_for('admin_pedidos.item_valor', pedido_id=pedido.id, item_id=i.id) }}" class="form-valor">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="valor" inputmode="decimal" placeholder="a combinar" aria-label="Valor combinado" value="{{ i.valor_unitario if i.valor_unitario is not none else '' }}">
             <button type="submit">Salvar</button>
           </form>
@@ -82,6 +83,7 @@
   <h2>Frete e rastreio</h2>
   {% if pedido.status != 'cancelado' %}
   <form method="post" action="{{ url_for('admin_pedidos.frete', pedido_id=pedido.id) }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Valor do frete (R$)
       <input type="text" name="frete_valor" inputmode="decimal" value="{{ pedido.frete_valor if pedido.frete_valor is not none else '' }}">
     </label>
@@ -106,6 +108,7 @@
   <h2>Andamento</h2>
   <form method="post" action="{{ url_for('admin_pedidos.mudar_status', pedido_id=pedido.id) }}" class="linha"
         onsubmit="return this.status.value !== 'cancelado' || confirm('Cancelar este pedido? As peças de pronta entrega voltam ao estoque.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <select name="status" aria-label="Novo status">
       {% for s in proximos %}<option value="{{ s }}">{{ s|rotulo_status }}</option>{% endfor %}
     </select>

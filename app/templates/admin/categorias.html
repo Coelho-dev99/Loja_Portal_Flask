@@ -17,6 +17,7 @@
         <td>
           <form method="post" action="{{ url_for('admin.categoria_excluir', categoria_id=c.id) }}"
                 onsubmit="return confirm('Excluir esta categoria? Os produtos dela ficam sem categoria.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="link">Excluir</button>
           </form>
         </td>
@@ -32,6 +33,7 @@
 <section class="caixa">
   <h2>Nova categoria</h2>
   <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Nome
       <input type="text" name="nome" maxlength="60" required placeholder="Ex.: Tapetes">
     </label>

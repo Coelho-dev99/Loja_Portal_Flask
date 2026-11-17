@@ -5,6 +5,7 @@
 <h1>{{ titulo }}</h1>
 
 <form method="post" enctype="multipart/form-data" class="form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label>Nome
     <input type="text" name="nome" maxlength="120" required value="{{ produto.nome or '' }}">
   </label>

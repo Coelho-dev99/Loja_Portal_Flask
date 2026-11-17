@@ -4,7 +4,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 
 from app import carrinho, frete, limitador
 from app.db import get_db
-from app.util import ler_inteiro
+from app.util import ip_cliente, ler_inteiro
 
 bp = Blueprint("checkout", __name__)
 
@@ -350,7 +350,7 @@ def cotar_frete():
     cep = so_digitos(request.args.get("cep", ""))
     if len(cep) != 8:
         return jsonify(status="erro", mensagem="CEP inválido."), 400
-    if not limitador.permitir(f"frete:{request.remote_addr}", 30, 600):
+    if not limitador.permitir(f"frete:{ip_cliente()}", 30, 600):
         return (
             jsonify(status="erro", mensagem="Muitas consultas seguidas. Tente de novo em alguns minutos."),
             429,

@@ -19,6 +19,7 @@
 <section class="caixa">
   <h2>Novo tipo</h2>
   <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label>Nome
       <input type="text" name="nome" maxlength="60" required placeholder="Ex.: Chaveiro">
     </label>
