@@ -1,5 +1,6 @@
 import os
 
+import psycopg2
 from flask import Flask, g
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -13,6 +14,25 @@ from app.status import ROTULOS
 
 MODOS_PROXY = {"nenhum", "proxy", "cloudflare"}
 SSLMODES_VALIDOS = {"", "disable", "allow", "prefer", "require", "verify-ca", "verify-full"}
+
+
+def _pagina_erro(codigo, titulo, texto):
+    """Pagina de erro simples, SEM consultar o banco.
+
+    Se o banco estiver fora do ar, uma pagina de erro que dependesse dele
+    (como o contador do carrinho) falharia de novo. Por isso o HTML e montado
+    aqui, so com o CSS do site.
+    """
+    html = (
+        '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<meta name="robots" content="noindex">'
+        f"<title>{titulo} · Portal Lãb</title>"
+        '<link rel="stylesheet" href="/static/loja.css"></head>'
+        f'<body><main class="miolo erro-pagina"><h1>{titulo}</h1><p>{texto}</p>'
+        '<p><a class="botao" href="/">Voltar à loja</a></p></main></body></html>'
+    )
+    return html, codigo
 
 
 def create_app():
@@ -60,6 +80,33 @@ def create_app():
     @app.errorhandler(413)
     def arquivo_grande(e):
         return "As fotos são grandes demais. Envie até 40 MB de uma vez.", 413
+
+    # ---- Paginas de erro ----
+    @app.errorhandler(404)
+    def nao_encontrado(e):
+        return _pagina_erro(
+            404,
+            "Página não encontrada",
+            "Esse endereço não existe ou a peça não está mais disponível.",
+        )
+
+    @app.errorhandler(psycopg2.OperationalError)
+    def banco_indisponivel(e):
+        # Banco fora do ar ou conexao que caiu: o visitante pode tentar de novo
+        app.logger.exception("Banco de dados indisponivel")
+        return _pagina_erro(
+            503,
+            "Estamos com uma instabilidade",
+            "Não conseguimos carregar esta página agora. Aguarde um instante e tente de novo.",
+        )
+
+    @app.errorhandler(500)
+    def erro_interno(e):
+        return _pagina_erro(
+            500,
+            "Algo deu errado",
+            "Tivemos um problema do nosso lado. Tente de novo em instantes ou fale com a gente pelo Instagram.",
+        )
 
     # ---- Dados disponiveis em todos os templates ----
     @app.context_processor

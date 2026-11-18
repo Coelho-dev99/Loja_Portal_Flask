@@ -1,13 +1,21 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from app import carrinho
+from app import carrinho, limitador
 from app.db import get_db
-from app.util import ler_inteiro
+from app.util import ip_cliente, ler_inteiro
 
 bp = Blueprint("loja", __name__)
 
 MODALIDADES = ("pronta_entrega", "personalizavel")
 MAX_PERSONALIZADO = 10
+
+# Pecas por pagina no catalogo
+POR_PAGINA = 24
+
+# Carrinhos NOVOS (visitante ainda sem cookie) que um mesmo IP pode abrir por hora.
+# Cada carrinho novo vira uma linha no banco; o limite barra robos que encheriam a tabela.
+MAX_CARRINHOS_NOVOS_POR_IP = 30
+JANELA_CARRINHOS_NOVOS = 3600
 
 
 @bp.route("/privacidade")
@@ -24,6 +32,7 @@ def catalogo(slug=None):
     modalidade = request.args.get("modalidade", "")
     if modalidade not in MODALIDADES:
         modalidade = ""
+    pagina = ler_inteiro(request.args.get("pagina", "1"), 1, 1000) or 1
 
     db = get_db()
     with db.cursor() as cur:
@@ -44,13 +53,19 @@ def catalogo(slug=None):
               AND (%(modalidade)s = '' OR p.modalidade = %(modalidade)s)
             ORDER BY (p.modalidade = 'pronta_entrega' AND p.estoque = 0),
                      p.criado_em DESC, p.id DESC
+            LIMIT %(limite)s OFFSET %(deslocamento)s
             """,
             {
                 "categoria": categoria["id"] if categoria else None,
                 "modalidade": modalidade,
+                # Pede 1 a mais so para saber se existe uma proxima pagina
+                "limite": POR_PAGINA + 1,
+                "deslocamento": (pagina - 1) * POR_PAGINA,
             },
         )
         produtos = cur.fetchall()
+        tem_proxima = len(produtos) > POR_PAGINA
+        produtos = produtos[:POR_PAGINA]
 
         cur.execute(
             """
@@ -68,6 +83,8 @@ def catalogo(slug=None):
         categorias=categorias,
         categoria=categoria,
         modalidade=modalidade,
+        pagina=pagina,
+        tem_proxima=tem_proxima,
     )
 
 
@@ -187,6 +204,13 @@ def carrinho_adicionar():
             "Finalize este pedido e faça outro depois.",
             "erro",
         )
+        return voltar
+
+    # Visitante sem carrinho ainda: este POST criaria uma linha nova no banco
+    if carrinho.token_atual() is None and not limitador.permitir(
+        f"carrinho-novo:{ip_cliente()}", MAX_CARRINHOS_NOVOS_POR_IP, JANELA_CARRINHOS_NOVOS
+    ):
+        flash("Muitas tentativas seguidas. Aguarde um pouco e tente de novo.", "erro")
         return voltar
 
     carrinho.salvar(itens)

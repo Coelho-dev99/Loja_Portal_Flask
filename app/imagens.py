@@ -11,6 +11,13 @@ FORMATOS_ACEITOS = {"JPEG", "PNG", "WEBP"}
 LADO_MAXIMO = 1600
 NOME_VALIDO = re.compile(r"^[0-9a-f]{32}\.jpg$")
 
+# Limite de megapixels por foto (largura x altura). Uma foto enorme ocupa muita
+# memoria ao ser aberta e pode derrubar o servidor. JPEG aguenta mais porque e
+# aberto ja em tamanho reduzido (veja salvar_foto); PNG e WebP, nao.
+MAX_PIXELS_JPEG = 100_000_000
+MAX_PIXELS_OUTROS = 40_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS_JPEG
+
 
 TIMEOUT_STORAGE = 20  # segundos
 
@@ -91,6 +98,15 @@ def salvar_foto(arquivo):
         imagem = Image.open(arquivo.stream)
         if imagem.format not in FORMATOS_ACEITOS:
             raise ErroImagem("Use fotos nos formatos JPG, PNG ou WebP.")
+
+        limite = MAX_PIXELS_JPEG if imagem.format == "JPEG" else MAX_PIXELS_OUTROS
+        if imagem.width * imagem.height > limite:
+            raise ErroImagem(
+                "Uma das fotos é grande demais. Reduza o tamanho da imagem e tente de novo."
+            )
+        if imagem.format == "JPEG":
+            # Abre o JPEG ja em tamanho menor (so o necessario), poupando memoria
+            imagem.draft("RGB", (LADO_MAXIMO, LADO_MAXIMO))
         imagem = ImageOps.exif_transpose(imagem)
 
         tem_transparencia = imagem.mode in ("RGBA", "LA") or (

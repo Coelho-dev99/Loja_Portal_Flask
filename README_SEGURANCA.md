@@ -39,6 +39,11 @@ escapar dos limites de tentativas.
 4. **Nunca exponha a porta 5432 à internet** e guarde backups do banco em lugar
    privado (nunca no GitHub): eles têm dados de clientes.
 
+## Verificação de que o site está no ar
+Use `/healthz` (ou `/saude`) no monitor ou no "Health Check Path" da hospedagem.
+Essa rota responde `{"status":"ok"}` sem consultar o banco: assim não mostra dado
+nenhum e não mantém o banco do Neon acordado só por causa do monitor.
+
 ## Anti-robô no checkout (opcional)
 Cloudflare Turnstile, gratuito, funciona em qualquer hospedagem.
 Crie o widget no painel da Cloudflare (Turnstile) com o domínio do seu site e

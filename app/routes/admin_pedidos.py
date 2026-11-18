@@ -7,6 +7,9 @@ from app.util import ler_decimal, ler_inteiro
 
 bp = Blueprint("admin_pedidos", __name__, url_prefix="/admin/pedidos")
 
+# Pedidos por pagina na lista do painel
+POR_PAGINA = 50
+
 ITENS_SQL = """
     SELECT i.id, i.tipo, i.quantidade, i.valor_unitario, i.descricao,
            p.nome AS produto_nome, t.nome AS tipo_nome
@@ -32,8 +35,19 @@ def lista():
     if status not in ROTULOS:
         status = ""
 
+    pagina = ler_inteiro(request.args.get("pagina", "1"), 1, 100000) or 1
+
     db = get_db()
     with db.cursor() as cur:
+        cur.execute("SELECT status, COUNT(*) AS n FROM pedidos GROUP BY status")
+        contagem = {linha["status"]: linha["n"] for linha in cur.fetchall()}
+        total_geral = sum(contagem.values())
+
+        # Quantas paginas existem para o filtro escolhido (sem passar do fim)
+        total_filtro = contagem.get(status, 0) if status else total_geral
+        total_paginas = max(1, -(-total_filtro // POR_PAGINA))
+        pagina = min(pagina, total_paginas)
+
         cur.execute(
             """
             SELECT pe.id, pe.status, pe.criado_em, pe.frete_valor,
@@ -48,21 +62,25 @@ def lista():
             WHERE (%(status)s = '' OR pe.status = %(status)s)
             GROUP BY pe.id, c.nome
             ORDER BY pe.criado_em DESC, pe.id DESC
+            LIMIT %(limite)s OFFSET %(deslocamento)s
             """,
-            {"status": status},
+            {
+                "status": status,
+                "limite": POR_PAGINA,
+                "deslocamento": (pagina - 1) * POR_PAGINA,
+            },
         )
         pedidos = cur.fetchall()
-
-        cur.execute("SELECT status, COUNT(*) AS n FROM pedidos GROUP BY status")
-        contagem = {linha["status"]: linha["n"] for linha in cur.fetchall()}
 
     return render_template(
         "admin/pedidos.html",
         pedidos=pedidos,
         status=status,
         contagem=contagem,
-        total_geral=sum(contagem.values()),
+        total_geral=total_geral,
         rotulos=ROTULOS,
+        pagina=pagina,
+        total_paginas=total_paginas,
     )
 
 

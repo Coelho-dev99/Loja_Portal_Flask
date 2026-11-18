@@ -52,6 +52,18 @@
   {% endfor %}
 </ul>
 
+{% if pagina > 1 or tem_proxima %}
+<nav class="paginacao" aria-label="Páginas">
+  {% if pagina > 1 %}
+  <a class="botao-contorno" href="{{ url_for('loja.catalogo', slug=categoria.slug if categoria else None, modalidade=modalidade or None, pagina=pagina - 1 if pagina > 2 else None) }}">← Anterior</a>
+  {% endif %}
+  <span>Página {{ pagina }}</span>
+  {% if tem_proxima %}
+  <a class="botao-contorno" href="{{ url_for('loja.catalogo', slug=categoria.slug if categoria else None, modalidade=modalidade or None, pagina=pagina + 1) }}">Próxima →</a>
+  {% endif %}
+</nav>
+{% endif %}
+
 {% if not categoria %}
 <section class="como-funciona">
   <h2>Como funciona</h2>

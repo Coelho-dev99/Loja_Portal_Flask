@@ -53,6 +53,9 @@
     <input type="number" name="estoque" min="0"
            value="{{ 0 if produto.estoque is none or produto.estoque is undefined else produto.estoque }}">
   </label>
+  {% if estoque_original is defined and estoque_original is not none %}
+  <input type="hidden" name="estoque_original" value="{{ estoque_original }}">
+  {% endif %}
 
   <fieldset class="grupo">
     <legend>Embalagem para o frete</legend>

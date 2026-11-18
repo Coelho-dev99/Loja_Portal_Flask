@@ -40,6 +40,18 @@
     </tbody>
   </table>
 </div>
+
+{% if total_paginas > 1 %}
+<nav class="paginacao" aria-label="Páginas">
+  {% if pagina > 1 %}
+  <a class="botao" href="{{ url_for('admin_pedidos.lista', status=status or None, pagina=pagina - 1) }}">← Mais recentes</a>
+  {% endif %}
+  <span>Página {{ pagina }} de {{ total_paginas }}</span>
+  {% if pagina < total_paginas %}
+  <a class="botao" href="{{ url_for('admin_pedidos.lista', status=status or None, pagina=pagina + 1) }}">Mais antigos →</a>
+  {% endif %}
+</nav>
+{% endif %}
 {% else %}
 <p>Nenhum pedido {% if status %}com esse status{% else %}ainda{% endif %}. Quando um cliente finalizar o carrinho no site, o pedido aparece aqui.</p>
 {% endif %}

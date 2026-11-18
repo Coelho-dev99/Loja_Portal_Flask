@@ -46,6 +46,9 @@ class Config:
     # MESMA maquina do site. Se estiver em outro servidor (banco na nuvem),
     # use "require" (ou "verify-full" com certificado).
     DB_SSLMODE = os.getenv("DB_SSLMODE", "").strip().lower()
+    # Prazo (segundos) para o banco responder ao conectar. Banco na nuvem pode
+    # levar um instante para acordar; 10 s e um bom meio-termo.
+    DB_CONNECT_TIMEOUT = int(os.getenv("DB_CONNECT_TIMEOUT", "10") or "10")
 
     # Painel administrativo (a senha fica guardada como hash, nunca em texto)
     ADMIN_USUARIO = os.getenv("ADMIN_USUARIO", "admin")

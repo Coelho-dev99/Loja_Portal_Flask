@@ -543,3 +543,14 @@ input[type="text"]:focus-visible, input[type="tel"]:focus-visible { outline-offs
   padding-top: 1.2rem;
   border-top: 2px dashed var(--linha);
 }
+
+/* Paginacao do catalogo e paginas de erro */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.erro-pagina { text-align: center; padding-top: 3rem; }

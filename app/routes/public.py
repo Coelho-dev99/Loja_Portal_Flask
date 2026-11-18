@@ -1,15 +1,15 @@
 from flask import Blueprint, jsonify
 
-from app.db import get_db
-
 bp = Blueprint("public", __name__)
 
 
-@bp.route("/saude")
+@bp.route("/healthz")
+@bp.route("/saude")  # endereco antigo: continua respondendo (Render, monitores)
 def saude():
-    """Rota de teste da conexao com o banco. Remover antes de publicar."""
-    db = get_db()
-    with db.cursor() as cur:
-        cur.execute("SELECT COUNT(*) AS total FROM tipos_personalizado")
-        total = cur.fetchone()["total"]
-    return jsonify(banco="conectado", tipos_personalizado=total)
+    """Verificacao de que o site esta no ar.
+
+    De proposito NAO consulta o banco: assim ninguem de fora enxerga dados do
+    banco por aqui, e um monitor que chame esta rota o dia todo nao mantem o
+    banco acordado (o que gasta o plano gratuito do Neon).
+    """
+    return jsonify(status="ok")

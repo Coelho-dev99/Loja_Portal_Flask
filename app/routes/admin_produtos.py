@@ -263,8 +263,22 @@ def produto_editar(produto_id):
         fotos = cur.fetchall()
         categorias, tipos = listas_do_formulario(cur)
 
+        # Estoque que o formulario mostrou quando foi aberto. Na hora de salvar,
+        # so a DIFERENCA entra no banco: se um pedido tirou unidades enquanto
+        # voce editava, essa baixa nao e apagada.
+        estoque_db = produto["estoque"]
+        estoque_original = estoque_db
+
         if request.method == "POST":
             dados, erros = ler_formulario(cur)
+
+            estoque_enviado = ler_inteiro(
+                request.form.get("estoque_original", ""), 0, 1_000_000
+            )
+            dados["estoque_original"] = (
+                estoque_enviado if dados["modalidade"] == "pronta_entrega" else None
+            )
+            estoque_original = estoque_enviado if estoque_enviado is not None else estoque_db
 
             # Fotos que ficam, na ordem escolhida (a principal vai para o inicio)
             ids_remover = {
@@ -294,7 +308,15 @@ def produto_editar(produto_id):
                             categoria_id = %(categoria_id)s,
                             modalidade = %(modalidade)s,
                             tipo_personalizado_id = %(tipo_personalizado_id)s,
-                            preco = %(preco)s, estoque = %(estoque)s,
+                            preco = %(preco)s,
+                            estoque = CASE
+                                WHEN %(estoque_original)s::integer IS NULL
+                                    THEN %(estoque)s
+                                ELSE GREATEST(
+                                    0,
+                                    estoque + (%(estoque)s - %(estoque_original)s::integer)
+                                )
+                            END,
                             peso_g = %(peso_g)s, altura_cm = %(altura_cm)s,
                             largura_cm = %(largura_cm)s,
                             comprimento_cm = %(comprimento_cm)s
@@ -341,6 +363,7 @@ def produto_editar(produto_id):
         tipos=tipos,
         titulo="Editar produto",
         max_fotos=MAX_FOTOS,
+        estoque_original=estoque_original,
     )
 
 

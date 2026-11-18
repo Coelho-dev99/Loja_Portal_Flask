@@ -217,3 +217,13 @@ fieldset.grupo legend { font-weight: 600; padding: 0 0.3rem; }
 .form-busca { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin: 1rem 0; }
 .form-busca label { display: grid; gap: 0.3rem; font-weight: 600; }
 .form-busca input { min-width: 16rem; }
+
+/* Paginacao da lista de pedidos */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
