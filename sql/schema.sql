@@ -12,12 +12,8 @@ CREATE TABLE clientes (
     nome        VARCHAR(120) NOT NULL,
     instagram   VARCHAR(60),
     telefone    VARCHAR(20)  NOT NULL UNIQUE,
-    cpf         VARCHAR(11),                       -- opcional (dado sensivel, LGPD)
     criado_em   TIMESTAMP    NOT NULL DEFAULT NOW()
 );
-
--- CPF unico apenas quando preenchido
-CREATE UNIQUE INDEX uq_clientes_cpf ON clientes (cpf) WHERE cpf IS NOT NULL;
 
 -- ENDERECOS
 -- Em apartamento, o complemento (bloco, numero do apto) e obrigatorio.

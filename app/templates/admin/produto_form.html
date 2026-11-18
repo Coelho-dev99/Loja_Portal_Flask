@@ -99,7 +99,7 @@
   </div>
 </form>
 
-<script>
+<script nonce="{{ csp_nonce }}">
   function atualizarModalidade() {
     const marcado = document.querySelector('input[name="modalidade"]:checked');
     const modalidade = marcado ? marcado.value : "pronta_entrega";

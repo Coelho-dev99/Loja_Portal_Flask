@@ -89,5 +89,24 @@
   {% endfor %}
 </section>
 
+<section class="caixa">
+  <h2>Privacidade (LGPD)</h2>
+  {% if anonimizado %}
+  <p class="nota">Os dados pessoais deste cliente já foram removidos.</p>
+  {% else %}
+  <p class="nota">
+    Se o cliente pedir para apagar os dados dele, use o botão abaixo. Nome, telefone, Instagram,
+    endereço (rua, número, complemento, bairro e CEP), observações e descrições de peças
+    personalizadas são apagados. Os pedidos, valores e datas ficam, sem identificar a pessoa.
+    <strong>Não dá para desfazer.</strong> Só funciona quando todos os pedidos dele estão concluídos ou cancelados.
+  </p>
+  <form method="post" action="{{ url_for('admin_clientes.anonimizar', cliente_id=cliente.id) }}"
+        data-confirmar="Remover os dados pessoais deste cliente? Isso não pode ser desfeito.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Remover dados pessoais</button>
+  </form>
+  {% endif %}
+</section>
+
 <p><a href="{{ url_for('admin_clientes.lista') }}">← Voltar para os clientes</a></p>
 {% endblock %}

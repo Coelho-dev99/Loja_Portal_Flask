@@ -1,5 +1,7 @@
 import os
 import re
+from datetime import timedelta
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -40,6 +42,10 @@ class Config:
     DB_NAME = os.getenv("DB_NAME", "loja_portal")
     DB_USER = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    # Criptografia da conexao com o banco. Deixe em branco se o banco esta na
+    # MESMA maquina do site. Se estiver em outro servidor (banco na nuvem),
+    # use "require" (ou "verify-full" com certificado).
+    DB_SSLMODE = os.getenv("DB_SSLMODE", "").strip().lower()
 
     # Painel administrativo (a senha fica guardada como hash, nunca em texto)
     ADMIN_USUARIO = os.getenv("ADMIN_USUARIO", "admin")
@@ -48,6 +54,10 @@ class Config:
     # Cookie de sessao
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+
+    # Login do painel expira apos 2 horas SEM uso (o prazo renova a cada clique).
+    # So vale para o administrador; a sessao dos clientes nao e afetada.
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
 
     # Limite do total enviado numa requisicao (fotos dos produtos)
     MAX_CONTENT_LENGTH = 40 * 1024 * 1024
@@ -72,6 +82,11 @@ class Config:
     #   "cloudflare" -> atras da Cloudflare (proxy laranja ou Tunnel), via CF-Connecting-IP
     # So use "proxy" ou "cloudflare" se o site NAO puder ser acessado sem passar por eles.
     PROXY_MODO = os.getenv("PROXY_MODO", "nenhum").strip().lower()
+
+    # Anti-robo opcional no checkout (Cloudflare Turnstile, gratuito).
+    # Deixe em branco para desligar.
+    TURNSTILE_SITE_KEY = os.getenv("TURNSTILE_SITE_KEY", "").strip()
+    TURNSTILE_SECRET_KEY = os.getenv("TURNSTILE_SECRET_KEY", "").strip()
 
     # Frete automatico (Melhor Envio)
     MELHOR_ENVIO_CLIENT_ID = os.getenv("MELHOR_ENVIO_CLIENT_ID", "").strip()

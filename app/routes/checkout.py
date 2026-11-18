@@ -2,7 +2,7 @@ import re
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
-from app import carrinho, frete, limitador
+from app import carrinho, frete, limitador, turnstile
 from app.db import get_db
 from app.util import ip_cliente, ler_inteiro
 
@@ -17,6 +17,12 @@ UFS = {
 class ErroPedido(Exception):
     """Problema que o cliente precisa saber (estoque, item indisponivel...)."""
 
+
+# Pedidos que um mesmo IP / telefone consegue criar por hora. O IP e generoso
+# porque redes de celular costumam compartilhar um IP entre varias pessoas.
+MAX_PEDIDOS_POR_IP = 10
+MAX_PEDIDOS_POR_TELEFONE = 5
+JANELA_PEDIDOS = 3600
 
 MENSAGEM_CONFIRMAR = (
     "O frete será calculado e confirmado na conversa do Instagram, antes do pagamento."
@@ -300,8 +306,30 @@ def finalizar():
 
     erros = []
     frete_inicial = None
+    status_http = 200
     if request.method == "POST":
         dados, erros = ler_formulario()
+        status_http = 200
+
+        # Protecao contra pedidos falsos em serie (que travariam o estoque) e
+        # contra gasto da cotacao de frete: limite por IP e por telefone, mais
+        # a verificacao anti-robo, se estiver ligada. Roda antes da cotacao.
+        if not erros:
+            ip = ip_cliente()
+            if not limitador.permitir(f"pedido-ip:{ip}", MAX_PEDIDOS_POR_IP, JANELA_PEDIDOS) or not limitador.permitir(
+                f"pedido-tel:{dados['telefone']}", MAX_PEDIDOS_POR_TELEFONE, JANELA_PEDIDOS
+            ):
+                erros.append(
+                    "Recebemos muitos pedidos seguidos. Aguarde um pouco e tente de novo, "
+                    "ou fale com a gente pelo Instagram."
+                )
+                status_http = 429
+            elif not turnstile.verificar(request.form.get("cf-turnstile-response"), ip):
+                erros.append(
+                    "Não conseguimos confirmar que você não é um robô. "
+                    "Aguarde o quadradinho de verificação terminar e envie de novo."
+                )
+                status_http = 400
 
         # O frete e cotado de novo no servidor: o preco nunca vem do navegador
         frete_escolhido = None
@@ -335,12 +363,15 @@ def finalizar():
                 session["pedido_enviado"] = pedido_id
                 return redirect(url_for("checkout.enviado"))
 
-    return render_template(
-        "loja/finalizar.html",
-        **dados_carrinho,
-        erros=erros,
-        valores=request.form,
-        frete_inicial=frete_inicial,
+    return (
+        render_template(
+            "loja/finalizar.html",
+            **dados_carrinho,
+            erros=erros,
+            valores=request.form,
+            frete_inicial=frete_inicial,
+        ),
+        status_http,
     )
 
 

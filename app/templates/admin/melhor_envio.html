@@ -25,7 +25,7 @@
   {% if conectado %}
   <p><span class="status pago">Conectado</span> O acesso é renovado automaticamente. Validade atual até {{ expira_em|data_br }} (UTC).</p>
   <form method="post" action="{{ url_for('admin_melhor_envio.desconectar') }}"
-        onsubmit="return confirm('Remover a conexão com o Melhor Envio? O frete volta a ser confirmado manualmente.');">
+        data-confirmar="Remover a conexão com o Melhor Envio? O frete volta a ser confirmado manualmente.">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit">Desconectar</button>
   </form>

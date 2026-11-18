@@ -1,0 +1,111 @@
+{% extends "loja/base_loja.html" %}
+{% block titulo %}Política de privacidade · {{ loja_nome }}{% endblock %}
+
+{#
+  RASCUNHO PARA CONFERIR ANTES DE PUBLICAR (este comentario nao aparece no site):
+  - Inclua o nome e o CPF/CNPJ de quem e responsavel pela loja, se quiser (e comum constar).
+  - Confira o item "Por quanto tempo guardamos" e escolha o prazo que valer para voce
+    (por exemplo, o exigido pela sua contabilidade para notas e pedidos).
+  - Confira o item "Com quem compartilhamos" com o seu jeito real de enviar (etiqueta, Correios...).
+  - Este texto descreve o que o SITE faz hoje. Se mudar o site, atualize o texto e a data.
+  - Nao e aconselhamento juridico: vale uma conferencia com quem entenda de LGPD.
+#}
+
+{% block conteudo %}
+<article class="privacidade">
+  <h1>Política de privacidade</h1>
+  <p>Última atualização: 18/11/2026</p>
+  <p>
+    A {{ loja_nome }} respeita a sua privacidade. Aqui explicamos, de forma simples, quais dados
+    pedimos no pedido, por que pedimos e o que você pode fazer com eles, conforme a
+    Lei Geral de Proteção de Dados (LGPD).
+  </p>
+
+  <h2>Quais dados coletamos</h2>
+  <ul>
+    <li>Nome, telefone e, se você quiser informar, o seu Instagram.</li>
+    <li>Endereço de entrega: CEP, rua, número, complemento, bairro, cidade e estado.</li>
+    <li>O que você pediu (peças, quantidades e a descrição das peças personalizadas) e o andamento do pedido.</li>
+  </ul>
+  <p>
+    Este site <strong>não</strong> pede CPF e <strong>não</strong> recebe dados de cartão ou de
+    pagamento. O pagamento é combinado em conversa pelo Instagram.
+  </p>
+
+  <h2>Para que usamos</h2>
+  <ul>
+    <li>Registrar e preparar o seu pedido e entregar na sua casa.</li>
+    <li>Calcular o frete.</li>
+    <li>Falar com você pelo Instagram ou telefone sobre o pedido, o pagamento e a entrega.</li>
+    <li>Permitir que você acompanhe o pedido pelo site, com o número do pedido e o seu telefone.</li>
+  </ul>
+  <p>
+    Só usamos os seus dados com a sua autorização (a caixinha que você marca ao enviar o pedido)
+    e para realizar o pedido que você pediu. Não vendemos os seus dados e não os usamos para
+    propaganda de terceiros.
+  </p>
+
+  <h2>Com quem compartilhamos</h2>
+  <ul>
+    <li>
+      <strong>Transportadora ou Correios:</strong> para entregar, o nome, o endereço e o telefone
+      podem ser informados na hora de gerar a etiqueta de envio.
+    </li>
+    <li>
+      <strong>Melhor Envio:</strong> para calcular o frete, o site envia somente o CEP de origem,
+      o CEP de destino e o peso e as medidas da embalagem. Não enviamos o seu nome nem o seu telefone.
+    </li>
+    <li>
+      <strong>ViaCEP:</strong> ao digitar o CEP, o seu navegador consulta o serviço gratuito ViaCEP
+      para preencher o endereço. O ViaCEP recebe o CEP digitado e o seu endereço de IP.
+    </li>
+    <li>
+      <strong>Instagram:</strong> a nossa conversa acontece lá e segue as regras do próprio Instagram.
+    </li>
+    {% if turnstile_site_key %}
+    <li>
+      <strong>Cloudflare (verificação anti-robô):</strong> ao enviar o pedido, a Cloudflare confirma
+      que quem está enviando não é um robô e, para isso, recebe o seu endereço de IP.
+    </li>
+    {% endif %}
+  </ul>
+
+  <h2>Cookies</h2>
+  <p>
+    Usamos apenas cookies necessários para o site funcionar: um guarda o seu carrinho (por até
+    30 dias) e outro mantém a sua sessão, por exemplo para você acompanhar o pedido. Não usamos
+    cookies de propaganda nem de rastreamento.
+  </p>
+
+  <h2>Por quanto tempo guardamos</h2>
+  <p>
+    Guardamos os seus dados enquanto o pedido estiver em andamento e, depois, pelo tempo necessário
+    para resolver qualquer problema com o pedido e cumprir obrigações legais. Carrinhos que ficam
+    parados por mais de 30 dias são apagados. Você pode pedir a exclusão dos seus dados a qualquer momento.
+  </p>
+
+  <h2>Seus direitos</h2>
+  <p>Você pode pedir, quando quiser:</p>
+  <ul>
+    <li>saber se tratamos dados seus e ter acesso a eles;</li>
+    <li>corrigir dados errados ou incompletos;</li>
+    <li>apagar ou anonimizar os seus dados;</li>
+    <li>saber com quem compartilhamos os seus dados;</li>
+    <li>retirar a sua autorização.</li>
+  </ul>
+  <p>
+    Para pedir, é só nos chamar no Instagram:
+    <a href="https://www.instagram.com/{{ instagram_usuario }}/" rel="noopener">@{{ instagram_usuario }}</a>.
+    Vamos confirmar que é você e responder o mais rápido possível, em até 15 dias.
+    Pedidos que ainda estão em andamento precisam ser concluídos ou cancelados antes de apagarmos os dados.
+  </p>
+
+  <h2>Como protegemos</h2>
+  <p>
+    O acesso à área de gestão dos pedidos é restrito e protegido por senha, e o site usa conexão
+    segura (HTTPS). Nenhum sistema é 100% seguro, mas tratamos os seus dados com cuidado.
+  </p>
+
+  <p><a href="{{ url_for('loja.catalogo') }}">← Voltar para a loja</a></p>
+</article>
+{% endblock %}

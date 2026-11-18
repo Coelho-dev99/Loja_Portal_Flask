@@ -10,6 +10,11 @@ MODALIDADES = ("pronta_entrega", "personalizavel")
 MAX_PERSONALIZADO = 10
 
 
+@bp.route("/privacidade")
+def privacidade():
+    return render_template("loja/privacidade.html")
+
+
 # ---------------------------------------------------------------
 # Catalogo
 # ---------------------------------------------------------------

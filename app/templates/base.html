@@ -6,6 +6,7 @@
   {% block head %}{% endblock %}
   <title>{% block titulo %}Portal La.B{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='admin.js') }}" defer></script>
 </head>
 <body>
   {% if session.get('admin') %}

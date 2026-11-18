@@ -1,4 +1,5 @@
 import hmac
+from urllib.parse import urlsplit
 
 from flask import (
     Blueprint,
@@ -22,6 +23,22 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 # Tentativas de login ERRADAS permitidas por IP, dentro da janela
 LOGIN_MAX_FALHAS = 5
 LOGIN_JANELA_SEGUNDOS = 15 * 60
+
+
+def destino_seguro(destino, padrao):
+    """So aceita voltar para um caminho interno do proprio site.
+
+    Barra enderecos como //site.com, /\\site.com (o navegador trata a barra
+    invertida como barra normal), http://site.com e caracteres de controle.
+    """
+    if not destino or not destino.startswith("/") or "\\" in destino:
+        return padrao
+    if destino.startswith("//") or any(ord(c) < 32 for c in destino):
+        return padrao
+    partes = urlsplit(destino)
+    if partes.scheme or partes.netloc:
+        return padrao
+    return destino
 
 
 # ---------------------------------------------------------------
@@ -52,11 +69,11 @@ def login():
             limitador.esquecer(chave_falhas)
             session.clear()
             session["admin"] = True
+            session.permanent = True  # expira apos 2h sem uso (PERMANENT_SESSION_LIFETIME)
 
-            # So aceita voltar para caminhos internos do proprio site
-            destino = request.args.get("next", "")
-            if not destino.startswith("/") or destino.startswith("//"):
-                destino = url_for("admin_pedidos.lista")
+            destino = destino_seguro(
+                request.args.get("next", ""), url_for("admin_pedidos.lista")
+            )
             return redirect(destino)
 
         limitador.registrar(chave_falhas)

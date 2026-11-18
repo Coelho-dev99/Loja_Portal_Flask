@@ -70,7 +70,7 @@
   </div>
 </article>
 
-<script>
+<script nonce="{{ csp_nonce }}">
   document.querySelectorAll(".miniaturas button").forEach(function (botao) {
     botao.addEventListener("click", function () {
       document.getElementById("foto-grande").src = botao.dataset.foto;

@@ -5,11 +5,13 @@ from flask_wtf.csrf import CSRFError, CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
-from app import carrinho
+from app import carrinho, turnstile
 from app.db import close_db
+from app.seguranca import init_seguranca
 from app.status import ROTULOS
 
 MODOS_PROXY = {"nenhum", "proxy", "cloudflare"}
+SSLMODES_VALIDOS = {"", "disable", "allow", "prefer", "require", "verify-ca", "verify-full"}
 
 
 def create_app():
@@ -22,6 +24,11 @@ def create_app():
         raise RuntimeError(
             f'PROXY_MODO invalido: "{modo_proxy}". Use: nenhum, proxy ou cloudflare.'
         )
+    if app.config["DB_SSLMODE"] not in SSLMODES_VALIDOS:
+        raise RuntimeError(
+            f'DB_SSLMODE invalido: "{app.config["DB_SSLMODE"]}". '
+            "Deixe em branco ou use: disable, allow, prefer, require, verify-ca, verify-full."
+        )
     if modo_proxy != "nenhum":
         # Confia em UM proxy: acerta o IP (remote_addr) e o https nos links gerados.
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
@@ -31,6 +38,9 @@ def create_app():
             "ATENCAO: COOKIES_SEGUROS=0. Os cookies de login e do carrinho podem "
             "trafegar sem HTTPS. Use isso so no seu computador (FLASK_DEBUG=1)."
         )
+
+    # ---- Cabecalhos de seguranca (CSP, anti-clickjacking, HSTS...) ----
+    init_seguranca(app)
 
     # ---- Protecao CSRF: todo formulario POST precisa do token da sessao ----
     CSRFProtect(app)
@@ -58,6 +68,9 @@ def create_app():
             "instagram_usuario": app.config["INSTAGRAM_USUARIO"],
             "carrinho_qtd": carrinho.quantidade_total(),
             "tem_logo": os.path.exists(os.path.join(app.static_folder, "logo.png")),
+            "turnstile_site_key": (
+                app.config["TURNSTILE_SITE_KEY"] if turnstile.ativo() else ""
+            ),
         }
 
     # ---- Cookie do carrinho ----

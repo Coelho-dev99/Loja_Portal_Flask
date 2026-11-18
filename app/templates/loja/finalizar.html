@@ -75,8 +75,13 @@
 
     <label class="opcao consentimento">
       <input type="checkbox" name="consentimento" required {{ 'checked' if valores.get('consentimento') }}>
-      <span>Autorizo o uso dos meus dados apenas para processar e entregar este pedido.</span>
+      <span>Autorizo o uso dos meus dados apenas para processar e entregar este pedido. <a href="{{ url_for('loja.privacidade') }}" target="_blank" rel="noopener">Política de privacidade</a></span>
     </label>
+
+    {% if turnstile_site_key %}
+    <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-language="pt-br"></div>
+    <script nonce="{{ csp_nonce }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    {% endif %}
 
     <button type="submit" class="botao">Enviar pedido</button>
   </form>
@@ -109,7 +114,7 @@
   </aside>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
   const campoCep = document.getElementById("cep");
 
   async function buscarCep() {
@@ -145,10 +150,10 @@
 </script>
 
 {% if frete_inicial %}
-<script id="frete-inicial" type="application/json">{{ frete_inicial|tojson }}</script>
+<script nonce="{{ csp_nonce }}" id="frete-inicial" type="application/json">{{ frete_inicial|tojson }}</script>
 {% endif %}
 
-<script>
+<script nonce="{{ csp_nonce }}">
   (function () {
     const campoCep = document.getElementById("cep");
     const aviso = document.getElementById("frete-aviso");

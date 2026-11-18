@@ -30,7 +30,7 @@
 <section class="caixa">
   <h2>Acompanhamento do cliente</h2>
   <p class="nota">O cliente acompanha o pedido informando o número e o telefone cadastrado. Você pode enviar este link na conversa:</p>
-  <input type="text" readonly value="{{ url_for('acompanhar.formulario', pedido=pedido.id, _external=True) }}" onclick="this.select()" aria-label="Link de acompanhamento">
+  <input type="text" readonly value="{{ url_for('acompanhar.formulario', pedido=pedido.id, _external=True) }}" data-selecionar aria-label="Link de acompanhamento">
 </section>
 
 <h2>Itens</h2>
@@ -107,7 +107,7 @@
 <section class="caixa">
   <h2>Andamento</h2>
   <form method="post" action="{{ url_for('admin_pedidos.mudar_status', pedido_id=pedido.id) }}" class="linha"
-        onsubmit="return this.status.value !== 'cancelado' || confirm('Cancelar este pedido? As peças de pronta entrega voltam ao estoque.');">
+        data-confirmar="Cancelar este pedido? As peças de pronta entrega voltam ao estoque." data-confirmar-campo="status" data-confirmar-valor="cancelado">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <select name="status" aria-label="Novo status">
       {% for s in proximos %}<option value="{{ s }}">{{ s|rotulo_status }}</option>{% endfor %}
