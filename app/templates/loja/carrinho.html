@@ -11,7 +11,7 @@
     <li class="linha-item{{ ' com-problema' if l.problema }}">
       <span class="moldura moldura-pequena">
         {% if l.produto and l.produto.foto %}
-        <img src="{{ url_for('static', filename='uploads/produtos/' ~ l.produto.foto) }}" alt="">
+        <img src="{{ url_foto(l.produto.foto) }}" alt="">
         {% else %}
         <span class="sem-foto">Sem foto</span>
         {% endif %}

@@ -7,6 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from app import carrinho, turnstile
 from app.db import close_db
+from app.imagens import url_foto
 from app.seguranca import init_seguranca
 from app.status import ROTULOS
 
@@ -89,6 +90,8 @@ def create_app():
         elif g.get("carrinho_limpar"):
             resposta.delete_cookie(carrinho.COOKIE)
         return resposta
+
+    app.jinja_env.globals["url_foto"] = url_foto
 
     # ---- Filtros usados nos templates ----
     @app.template_filter("brl")

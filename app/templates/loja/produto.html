@@ -10,7 +10,7 @@
   <div class="galeria">
     <div class="moldura moldura-grande">
       {% if fotos %}
-      <img id="foto-grande" src="{{ url_for('static', filename='uploads/produtos/' ~ fotos[0].arquivo) }}" alt="{{ produto.nome }}">
+      <img id="foto-grande" src="{{ url_foto(fotos[0].arquivo) }}" alt="{{ produto.nome }}">
       {% else %}
       <span class="sem-foto">Sem foto</span>
       {% endif %}
@@ -19,8 +19,8 @@
     <ul class="miniaturas">
       {% for f in fotos %}
       <li>
-        <button type="button" data-foto="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" aria-label="Ver a foto {{ loop.index }}">
-          <img src="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" alt="">
+        <button type="button" data-foto="{{ url_foto(f.arquivo) }}" aria-label="Ver a foto {{ loop.index }}">
+          <img src="{{ url_foto(f.arquivo) }}" alt="">
         </button>
       </li>
       {% endfor %}

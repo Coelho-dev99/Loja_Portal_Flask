@@ -62,6 +62,13 @@ class Config:
     # Limite do total enviado numa requisicao (fotos dos produtos)
     MAX_CONTENT_LENGTH = 40 * 1024 * 1024
 
+    # Fotos dos produtos no Supabase Storage (opcional).
+    # Sem SUPABASE_URL e SUPABASE_SECRET_KEY, as fotos ficam em app/static/uploads.
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    # Chave SECRETA (sb_secret_... ou service_role): so no servidor, nunca no git.
+    SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+    SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "produtos").strip()
+
     # Loja
     INSTAGRAM_USUARIO = os.getenv("INSTAGRAM_USUARIO", "portal_la.b")
 

@@ -75,9 +75,15 @@ Se algo "sumir" depois de uma mudança, abra o console do navegador (F12): ele d
 qual regra bloqueou.
 
 ## Fotos dos produtos
-As fotos enviadas pelo painel ficam em `app/static/uploads/`, que não vai para o
-GitHub. Em hospedagem que apaga arquivos a cada atualização, use um disco
-persistente e faça backup dessa pasta.
+Com `SUPABASE_URL` e `SUPABASE_SECRET_KEY` no `.env`, as fotos enviadas pelo
+painel vão para o bucket público do Supabase Storage (`SUPABASE_BUCKET`).
+A chave secreta ignora todas as regras de acesso: use-a só no servidor, nunca
+no GitHub nem em arquivos do navegador, e não crie políticas de upload para
+visitantes no bucket. O banco guarda só o nome do arquivo.
+
+Sem essas variáveis, as fotos ficam em `app/static/uploads/` (não vai para o
+GitHub). Em hospedagem que apaga arquivos a cada atualização, isso perde as
+fotos: use o Supabase ou um disco persistente com backup.
 
 ## Depois de atualizar
 Rode `pip install -r requirements.txt`. De vez em quando, rode

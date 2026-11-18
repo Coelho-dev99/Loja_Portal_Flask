@@ -27,7 +27,7 @@
       <tr class="{{ '' if p.ativo else 'inativo' }}">
         <td>
           {% if p.foto %}
-          <img class="miniatura" src="{{ url_for('static', filename='uploads/produtos/' ~ p.foto) }}" alt="">
+          <img class="miniatura" src="{{ url_foto(p.foto) }}" alt="">
           {% else %}
           <span class="miniatura vazia"></span>
           {% endif %}

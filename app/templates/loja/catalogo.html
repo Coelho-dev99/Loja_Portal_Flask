@@ -33,7 +33,7 @@
     <a class="cartao" href="{{ url_for('loja.produto', slug=p.slug) }}">
       <span class="moldura">
         {% if p.foto %}
-        <img src="{{ url_for('static', filename='uploads/produtos/' ~ p.foto) }}" alt="" loading="lazy">
+        <img src="{{ url_foto(p.foto) }}" alt="" loading="lazy">
         {% else %}
         <span class="sem-foto">Sem foto</span>
         {% endif %}

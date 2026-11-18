@@ -28,7 +28,7 @@ CAMINHOS_SEM_CACHE = ("/admin", "/acompanhar", "/pedido-enviado", "/finalizar", 
 TURNSTILE = "https://challenges.cloudflare.com"
 
 
-def montar_csp(nonce, turnstile_ativo=False):
+def montar_csp(nonce, turnstile_ativo=False, imagens_extra=""):
     extra = f" {TURNSTILE}" if turnstile_ativo else ""
     frames = TURNSTILE if turnstile_ativo else "'none'"
     return "; ".join(
@@ -37,7 +37,7 @@ def montar_csp(nonce, turnstile_ativo=False):
             f"script-src 'self' 'nonce-{nonce}'{extra}",
             "script-src-attr 'none'",  # sem onclick="..." e parecidos
             "style-src 'self'",
-            "img-src 'self' data:",
+            f"img-src 'self' data:{imagens_extra}",
             f"connect-src 'self' https://viacep.com.br{extra}",
             f"frame-src {frames}",
             "object-src 'none'",
@@ -62,8 +62,10 @@ def init_seguranca(app):
         turnstile = bool(
             app.config.get("TURNSTILE_SITE_KEY") and app.config.get("TURNSTILE_SECRET_KEY")
         )
+        # Fotos no Supabase Storage: libera so o endereco do projeto
+        supabase = app.config.get("SUPABASE_URL")
         resposta.headers["Content-Security-Policy"] = montar_csp(
-            g.get("csp_nonce", ""), turnstile
+            g.get("csp_nonce", ""), turnstile, f" {supabase}" if supabase else ""
         )
         resposta.headers["X-Content-Type-Options"] = "nosniff"
         resposta.headers["X-Frame-Options"] = "DENY"

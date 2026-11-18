@@ -79,7 +79,7 @@
     <div class="fotos-atuais">
       {% for f in fotos %}
       <div class="foto-item">
-        <img src="{{ url_for('static', filename='uploads/produtos/' ~ f.arquivo) }}" alt="">
+        <img src="{{ url_foto(f.arquivo) }}" alt="">
         <label class="check"><input type="radio" name="principal" value="{{ f.id }}" {{ 'checked' if loop.first }}><span>Principal</span></label>
         <label class="check"><input type="checkbox" name="remover_foto" value="{{ f.id }}"><span>Remover</span></label>
       </div>
