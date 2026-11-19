@@ -2,6 +2,7 @@ import re
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
+from app.telegram import avisar_pedido_novo
 from app import carrinho, frete, limitador, turnstile
 from app.db import get_db
 from app.util import ip_cliente, ler_inteiro
@@ -359,6 +360,7 @@ def finalizar():
                     return redirect(url_for("loja.ver_carrinho"))
                 erros.append(str(e))
             else:
+                avisar_pedido_novo(pedido_id, dados, dados_carrinho, frete_escolhido)
                 carrinho.marcar_limpo()
                 session["pedido_enviado"] = pedido_id
                 return redirect(url_for("checkout.enviado"))
