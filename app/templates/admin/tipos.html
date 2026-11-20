@@ -3,14 +3,40 @@
 
 {% block conteudo %}
 <h1>Tipos de peça personalizada</h1>
-<p class="nota">Usados nos pedidos personalizados e no relatório mensal.</p>
+<p class="nota">
+  Usados nos pedidos personalizados e no relatório mensal. Para mudar um nome, edite e clique em
+  Salvar (o novo nome aparece também nos pedidos e relatórios antigos). Só dá para excluir um tipo
+  que nunca foi usado em pedido nem em produto.
+</p>
 
 <div class="tabela">
   <table>
-    <thead><tr><th>Tipo</th><th>Vezes usado</th></tr></thead>
+    <thead><tr><th>Tipo</th><th>Em pedidos</th><th>Em produtos</th><th></th></tr></thead>
     <tbody>
     {% for t in tipos %}
-      <tr><td>{{ t.nome }}</td><td>{{ t.usos }}</td></tr>
+      <tr>
+        <td>
+          <form method="post" action="{{ url_for('admin.tipo_editar', tipo_id=t.id) }}" class="acoes">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="nome" value="{{ t.nome }}" maxlength="60" required
+                   aria-label="Nome do tipo">
+            <button type="submit">Salvar</button>
+          </form>
+        </td>
+        <td>{{ t.usos }}</td>
+        <td>{{ t.produtos }}</td>
+        <td>
+          {% if t.usos == 0 and t.produtos == 0 %}
+          <form method="post" action="{{ url_for('admin.tipo_excluir', tipo_id=t.id) }}"
+                data-confirmar="Excluir o tipo “{{ t.nome }}”? Isso não pode ser desfeito.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="link">Excluir</button>
+          </form>
+          {% else %}
+          <span class="nota">em uso</span>
+          {% endif %}
+        </td>
+      </tr>
     {% endfor %}
     </tbody>
   </table>

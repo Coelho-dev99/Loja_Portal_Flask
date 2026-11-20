@@ -1,8 +1,10 @@
 import hmac
 from urllib.parse import urlsplit
 
+import psycopg2
 from flask import (
     Blueprint,
+    abort,
     current_app,
     flash,
     redirect,
@@ -130,13 +132,84 @@ def tipos():
             """
             SELECT t.id, t.nome,
                    (SELECT COUNT(*) FROM itens_pedido i
-                    WHERE i.tipo_personalizado_id = t.id) AS usos
+                    WHERE i.tipo_personalizado_id = t.id) AS usos,
+                   (SELECT COUNT(*) FROM produtos p
+                    WHERE p.tipo_personalizado_id = t.id) AS produtos
             FROM tipos_personalizado t
             ORDER BY t.nome
             """
         )
         lista = cur.fetchall()
     return render_template("admin/tipos.html", tipos=lista)
+
+
+@bp.route("/tipos/<int:tipo_id>/editar", methods=["POST"])
+@login_required
+def tipo_editar(tipo_id):
+    """Renomeia o tipo. O numero (id) continua o mesmo, entao nada se perde."""
+    db = get_db()
+    nome = request.form.get("nome", "").strip()
+
+    if not nome:
+        flash("Informe o nome do tipo.", "erro")
+    elif len(nome) > 60:
+        flash("O nome do tipo pode ter no máximo 60 caracteres.", "erro")
+    else:
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM tipos_personalizado WHERE lower(nome) = lower(%s) AND id <> %s",
+                (nome, tipo_id),
+            )
+            if cur.fetchone():
+                flash("Já existe outro tipo com esse nome.", "erro")
+            else:
+                cur.execute(
+                    "UPDATE tipos_personalizado SET nome = %s WHERE id = %s RETURNING id",
+                    (nome, tipo_id),
+                )
+                if cur.fetchone() is None:
+                    db.rollback()
+                    abort(404)
+                db.commit()
+                flash("Tipo atualizado.", "ok")
+    return redirect(url_for("admin.tipos"))
+
+
+@bp.route("/tipos/<int:tipo_id>/excluir", methods=["POST"])
+@login_required
+def tipo_excluir(tipo_id):
+    """Exclui o tipo SO se nenhum pedido e nenhum produto usar ele.
+
+    Tipo que ja apareceu em pedido nunca e apagado: o relatorio de meses
+    passados perderia essas vendas. O proprio banco tambem barra isso.
+    """
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            SELECT (SELECT COUNT(*) FROM itens_pedido WHERE tipo_personalizado_id = %s) AS pedidos,
+                   (SELECT COUNT(*) FROM produtos WHERE tipo_personalizado_id = %s) AS produtos
+            """,
+            (tipo_id, tipo_id),
+        )
+        uso = cur.fetchone()
+        if uso["pedidos"] or uso["produtos"]:
+            flash(
+                "Esse tipo está em uso (em pedidos ou em produtos) e não pode ser excluído. "
+                "Você pode renomeá-lo.",
+                "erro",
+            )
+            return redirect(url_for("admin.tipos"))
+        try:
+            cur.execute("DELETE FROM tipos_personalizado WHERE id = %s", (tipo_id,))
+            db.commit()
+        except psycopg2.errors.ForeignKeyViolation:
+            # alguem usou o tipo no mesmo instante: o banco impediu a exclusao
+            db.rollback()
+            flash("Esse tipo acabou de ser usado e não pode ser excluído.", "erro")
+            return redirect(url_for("admin.tipos"))
+    flash("Tipo excluído.", "ok")
+    return redirect(url_for("admin.tipos"))
 
 
 # ---------------------------------------------------------------
