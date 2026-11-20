@@ -14,7 +14,7 @@
 {% block conteudo %}
 <article class="privacidade">
   <h1>Política de privacidade</h1>
-  <p>Última atualização: 18/11/2026</p>
+  <p>Última atualização: 20/11/2026</p>
   <p>
     A {{ loja_nome }} respeita a sua privacidade. Aqui explicamos, de forma simples, quais dados
     pedimos no pedido, por que pedimos e o que você pode fazer com eles, conforme a
@@ -62,6 +62,16 @@
     <li>
       <strong>Instagram:</strong> a nossa conversa acontece lá e segue as regras do próprio Instagram.
     </li>
+    <li>
+      <strong>Telegram (aviso de pedido novo):</strong> quando você envia um pedido, a loja recebe um
+      aviso no Telegram com o seu nome, telefone, Instagram (se informado), cidade e estado, e os
+      itens do pedido. O endereço completo não vai nesse aviso.
+    </li>
+    <li>
+      <strong>Hospedagem e banco de dados (Render e Neon):</strong> o site funciona na plataforma
+      Render e os dados do pedido ficam guardados em um banco de dados na plataforma Neon. Elas só
+      armazenam e processam os dados para o site funcionar, em nosso nome.
+    </li>
     {% if turnstile_site_key %}
     <li>
       <strong>Cloudflare (verificação anti-robô):</strong> ao enviar o pedido, a Cloudflare confirma
@@ -81,7 +91,8 @@
   <p>
     Guardamos os seus dados enquanto o pedido estiver em andamento e, depois, pelo tempo necessário
     para resolver qualquer problema com o pedido e cumprir obrigações legais. Carrinhos que ficam
-    parados por mais de 30 dias são apagados. Você pode pedir a exclusão dos seus dados a qualquer momento.
+    parados por mais de 30 dias são apagados. Você pode pedir a exclusão dos seus dados a qualquer
+    momento; isso inclui o aviso do pedido que ficou na nossa conversa do Telegram.
   </p>
 
   <h2>Seus direitos</h2>
